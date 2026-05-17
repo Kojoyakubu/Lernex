@@ -1904,10 +1904,8 @@ function ensureEvaluationQuestions(html = '', { topic = '', isMultiSession = fal
   );
 }
 
-function shouldRequireSimpleDiagram(subject = '') {
+function shouldUseDiagramSupport(subject = '') {
   const normalized = String(subject || '').toLowerCase();
-  if (!normalized) return false;
-
   return [
     'mathematics',
     'math',
@@ -1916,103 +1914,80 @@ function shouldRequireSimpleDiagram(subject = '') {
     'career technology',
     'career and technology',
     'design and technology',
-    'technical',
-  ].some((keyword) => normalized.includes(keyword));
+  ].some((key) => normalized.includes(key));
 }
 
-function ensurePhase2ActivityStructure(html = '', { subjectName = '', topic = '' } = {}) {
-  const source = String(html || '');
-  const safeTopic = String(topic || '').trim() || 'the lesson topic';
-  const requireDiagram = shouldRequireSimpleDiagram(subjectName);
+function topicNeedsSimpleDiagram(topic = '', activityText = '') {
+  const probe = `${topic} ${activityText}`.toLowerCase();
+  const visualKeywords = [
+    'diagram',
+    'graph',
+    'chart',
+    'table',
+    'shape',
+    'angle',
+    'line',
+    'pattern',
+    'drawing',
+    'sketch',
+    'design',
+    'measurement',
+    'construction',
+    'layout',
+    'flow',
+    'process',
+    'circuit',
+    'fraction',
+    'geometry',
+    'place value',
+  ];
+  return visualKeywords.some((key) => probe.includes(key));
+}
 
-  const toPlainText = (value = '') => String(value)
+function ensurePhase2ActivitiesReadable(html = '', { subjectName = '', topic = '' } = {}) {
+  const source = String(html || '');
+  const allowDiagram = shouldUseDiagramSupport(subjectName);
+
+  const stripTags = (value = '') => String(value)
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  const firstSentence = (value = '') => {
-    const text = toPlainText(value);
-    if (!text) return '';
-    const chunks = text.split(/(?<=[.!?])\s+/).filter(Boolean);
-    return (chunks[0] || text).trim();
-  };
-
-  const buildStructuredBody = (activityNumber, currentBody) => {
-    const currentText = toPlainText(currentBody);
-    const lead = firstSentence(currentBody);
-    const guidedMode = Number(activityNumber) === 1;
-
-    const objective = guidedMode
-      ? `Understand and explain key ideas in ${safeTopic}.`
-      : `Apply ${safeTopic} through a practical learner task.`;
-
-    const step1 = guidedMode
-      ? `Teacher introduces ${safeTopic} using one concrete example from classwork.`
-      : `Teacher reviews the key idea briefly and shows one solved example.`;
-    const step2 = lead
-      ? `Teacher models this clearly: ${lead}`
-      : `Teacher models the process step-by-step on the board with clear labels.`;
-    const step3 = guidedMode
-      ? 'Teacher asks two short checks for understanding before learners begin tasks.'
-      : 'Teacher supports pairs/groups as they complete the task and explain their reasoning.';
-
-    const learnerTask = guidedMode
-      ? `Learners complete one guided practice task on ${safeTopic} in pairs.`
-      : `Learners complete an independent task and compare answers with a partner.`;
-
-    const expectedOutput = guidedMode
-      ? 'Correct worked example with key terms, symbols, or labels.'
-      : 'Completed task with accurate method and final response.';
-
-    const afl = guidedMode
-      ? 'Observe whether learners can explain each step using correct terms.'
-      : 'Listen for correct reasoning and check if the final response matches the method.';
-
-    const differentiation = guidedMode
-      ? 'Support: provide a partially completed scaffold. Extension: add one challenge item with higher difficulty.'
-      : 'Support: give prompts or sentence starters. Extension: ask learners to create and solve a similar item.';
-
-    const diagramLines = requireDiagram
-      ? `<br><strong>Simple Diagram:</strong><br>- Diagram Purpose: Visualize the concept quickly.<br>- Board Sketch: Draw a simple labeled diagram related to ${safeTopic}.<br>- Labels Learners Copy: Title, key parts, and one worked example label.`
-      : '';
-
-    return `<strong>Objective:</strong> ${objective}<br><strong>Teacher Steps:</strong><br>1. ${step1}<br>2. ${step2}<br>3. ${step3}<br><strong>Learner Task:</strong> ${learnerTask}<br><strong>Expected Output:</strong> ${expectedOutput}<br><strong>AfL Checkpoint:</strong> ${afl}<br><strong>Differentiation:</strong> ${differentiation}${diagramLines}`;
+  const splitSentences = (value = '') => {
+    const text = stripTags(value);
+    if (!text) return [];
+    return text
+      .split(/(?<=[.!?])\s+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
   };
 
   return source.replace(
     /(<p>\s*<strong>(?:Session\s*\d+\s*)?Activity\s*(1|2)\s*:\/strong>\s*<br\s*\/?\s*>)([\s\S]*?)(<\/p>)/gi,
     (_full, prefix, activityNumber, body, suffix) => {
-      const bodyText = toPlainText(body);
-      if (!bodyText) {
-        return `${prefix}${buildStructuredBody(activityNumber, '')}${suffix}`;
+      const rawBody = String(body || '');
+      const bodyText = stripTags(rawBody);
+      if (!bodyText) return `${prefix}${body}${suffix}`;
+
+      const alreadyReadable = /<br\s*\/?\s*>|<ul>|<ol>|\b1\.\s+/i.test(rawBody);
+      const lines = splitSentences(rawBody);
+      const compactLines = lines.slice(0, 4);
+
+      let rebuiltBody = rawBody;
+      if (!alreadyReadable) {
+        const fallback = compactLines.length ? compactLines : [bodyText];
+        rebuiltBody = fallback
+          .map((line, idx) => `${idx + 1}. ${line}`)
+          .join('<br>');
       }
 
-      const hasObjective = /objective\s*:/i.test(bodyText);
-      const hasTeacherSteps = /teacher steps\s*:/i.test(bodyText);
-      const hasLearnerTask = /learner task\s*:/i.test(bodyText);
-      const hasExpectedOutput = /expected output\s*:/i.test(bodyText);
-      const hasAfl = /(afl checkpoint|assessment-for-learning|assessment for learning)\s*:/i.test(bodyText);
-      const hasDifferentiation = /differentiation\s*:/i.test(bodyText);
-      const hasNumberedSteps = /1\.\s+[^<]+\s+2\.\s+[^<]+\s+3\./i.test(bodyText);
-      const hasDiagram = /simple diagram\s*:/i.test(bodyText);
-
-      const isStructured = hasObjective
-        && hasTeacherSteps
-        && hasLearnerTask
-        && hasExpectedOutput
-        && hasAfl
-        && hasDifferentiation
-        && hasNumberedSteps;
-
-      if (isStructured) {
-        if (requireDiagram && !hasDiagram) {
-          const augmentedBody = `${body}<br><strong>Simple Diagram:</strong><br>- Diagram Purpose: Visualize the concept quickly.<br>- Board Sketch: Draw a simple labeled diagram related to ${safeTopic}.<br>- Labels Learners Copy: Title, key parts, and one worked example label.`;
-          return `${prefix}${augmentedBody}${suffix}`;
-        }
-        return `${prefix}${body}${suffix}`;
+      const hasDiagram = /simple diagram\s*:/i.test(stripTags(rebuiltBody));
+      if (allowDiagram && !hasDiagram && topicNeedsSimpleDiagram(topic, bodyText)) {
+        const diagramLine = `<br><strong>Simple Diagram:</strong> Quick board sketch with Ghanaian context (e.g., market, transport, home, or school setting), clearly labeled for learners to copy.`;
+        rebuiltBody = `${rebuiltBody}${diagramLine}`;
       }
 
-      return `${prefix}${buildStructuredBody(activityNumber, body)}${suffix}`;
+      return `${prefix}${rebuiltBody}${suffix}`;
     }
   );
 }
@@ -2138,23 +2113,13 @@ LESSON PHASE GOOD vs BAD EXAMPLES (use as a quality standard for this lesson):
 17. Evaluation questions must name exact values, terms, or operations from the lesson (not generic "what did you learn?" questions).
 18. Differentiation: name the EXACT support or extension (e.g., "provide a pre-filled place value chart" or "challenge: write a 4-digit number and decompose it").
 19. Assessment-for-Learning checkpoint must describe what the teacher observes or listens for (not "check for understanding").
-20. Phase 2 Activity 1 and Activity 2 MUST NOT be one continuous paragraph. Use this exact structure in each activity:
-    Objective: ...
-    Teacher Steps:
-    1. ...
-    2. ...
-    3. ...
-    Learner Task: ...
-    Expected Output: ...
-    AfL Checkpoint: ...
-    Differentiation: ...
-21. Teacher Steps in each activity must always include at least 3 numbered steps.
-22. For Mathematics, Creative Arts, Career Technology, and closely related practical/visual subjects, include a "Simple Diagram" block in Phase 2 activities whenever it improves understanding.
-23. A "Simple Diagram" block must contain: Diagram Purpose, Board Sketch (quick-to-draw), and Labels Learners Copy.
+20. Keep Phase 2 Activity 1 and Activity 2 as short readable action lines (3-5 lines), not one continuous paragraph. Separate lines with <br> and you may number them.
+21. For Mathematics, Creative Arts, Career Technology, and related practical subjects, include "Simple Diagram:" only when the concept is visual/spatial/process-based. Keep it easy to draw on a classroom board.
+22. Keep examples and classroom context Ghanaian: use local names, places, materials, and everyday Ghana settings where appropriate.
 
 LESSON PHASE STRUCTURE RUBRIC:
   Phase 1: specific prior-knowledge trigger + engaging named task + explicit objective sentence.
-  Phase 2: in both Activity 1 and Activity 2 use Objective + 3-step Teacher Steps + Learner Task + Expected Output + AfL Checkpoint + Differentiation (+ Simple Diagram when relevant).
+  Phase 2: teacher explanation with examples -> readable step lines for activity flow -> named learner task with output -> AfL observation note -> differentiation move -> home assignment with specific task.
   Phase 3: subject-specific recap sentence + 1–2 reflection questions + Ghana real-life named example.
   Multi-session: Session 2 must deepen or apply what Session 1 introduced, not restate it.
 
@@ -2201,8 +2166,8 @@ REMEMBER: Return ONLY the HTML above, filled with appropriate content. Keep the 
     isMultiSession: Number(sessionsPerWeek || 1) >= 2,
   });
 
-  // Guardrail: normalize Activity 1/2 into structured, classroom-ready blocks.
-  text = ensurePhase2ActivityStructure(text, {
+  // Guardrail: keep Activity 1/2 readable (not continuous prose) and add diagrams when needed.
+  text = ensurePhase2ActivitiesReadable(text, {
     subjectName: resolvedSubjectName,
     topic: resolvedSubStrandName,
   });
