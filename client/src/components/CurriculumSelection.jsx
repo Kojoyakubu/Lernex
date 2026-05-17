@@ -9,7 +9,8 @@ const CurriculumSelection = ({
   subStrands,
   selections,
   handleSelectionChange,
-  isLoading
+  isLoading,
+  allowStrandWithoutSubject = false,
 }) => (
   <Grid container spacing={2}>
     <Grid item xs={12} sm={6}>
@@ -29,15 +30,25 @@ const CurriculumSelection = ({
       </FormControl>
     </Grid>
     <Grid item xs={12} sm={6}>
-      <FormControl fullWidth size="small" disabled={!selections.class}>
-        <InputLabel>Subject</InputLabel>
-        <Select name="subject" value={selections.subject} label="Subject" onChange={handleSelectionChange}>
+      <FormControl fullWidth size="small" disabled={!selections.class || allowStrandWithoutSubject}>
+        <InputLabel>{allowStrandWithoutSubject ? 'Subject (optional)' : 'Subject'}</InputLabel>
+        <Select
+          name="subject"
+          value={selections.subject}
+          label={allowStrandWithoutSubject ? 'Subject (optional)' : 'Subject'}
+          onChange={handleSelectionChange}
+        >
+          {allowStrandWithoutSubject && (
+            <MenuItem value="" disabled>
+              No subject selection required for this class
+            </MenuItem>
+          )}
           {(subjects || []).map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}
         </Select>
       </FormControl>
     </Grid>
     <Grid item xs={12} sm={6}>
-      <FormControl fullWidth size="small" disabled={!selections.subject}>
+      <FormControl fullWidth size="small" disabled={!selections.subject && !allowStrandWithoutSubject}>
         <InputLabel>Learning Area / Strand</InputLabel>
         <Select name="strand" value={selections.strand} label="Learning Area / Strand" onChange={handleSelectionChange}>
           {(strands || []).map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}

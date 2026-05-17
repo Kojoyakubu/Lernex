@@ -257,6 +257,7 @@ function TeacherDashboard() {
   const [strandForm, setStrandForm] = useState(INITIAL_STRAND_FORM);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [learnerNoteToDelete, setLearnerNoteToDelete] = useState(null);
+  const [allowStrandWithoutSubject, setAllowStrandWithoutSubject] = useState(false);
 
   // View state
   const [bannerCollapsed, setBannerCollapsed] = useState(false);
@@ -505,10 +506,66 @@ function TeacherDashboard() {
   }, [activeDialog, dispatch]);
 
   // Dependent fetches
-  useEffect(() => { if (selections.level) dispatch(fetchChildren({ entity: 'classes', parentEntity: 'levels', parentId: selections.level })); }, [selections.level, dispatch]);
-  useEffect(() => { if (selections.class) dispatch(fetchChildren({ entity: 'subjects', parentEntity: 'classes', parentId: selections.class })); }, [selections.class, dispatch]);
-  useEffect(() => { if (selections.subject) dispatch(fetchChildren({ entity: 'strands', parentEntity: 'subjects', parentId: selections.subject })); }, [selections.subject, dispatch]);
-  useEffect(() => { if (selections.strand) dispatch(fetchChildren({ entity: 'subStrands', parentEntity: 'strands', parentId: selections.strand })); }, [selections.strand, dispatch]);
+  useEffect(() => {
+    if (selections.level) {
+      dispatch(fetchChildren({ entity: 'classes', parentEntity: 'levels', parentId: selections.level }));
+    }
+  }, [selections.level, dispatch]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!selections.class) {
+      setAllowStrandWithoutSubject(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    (async () => {
+      try {
+        const subjectList = await dispatch(
+          fetchChildren({ entity: 'subjects', parentEntity: 'classes', parentId: selections.class })
+        ).unwrap();
+
+        if (cancelled) return;
+
+        const hasSubjects = Array.isArray(subjectList) && subjectList.length > 0;
+        setAllowStrandWithoutSubject(!hasSubjects);
+
+        if (!hasSubjects) {
+          dispatch(fetchChildren({ entity: 'strands', parentEntity: 'classes', parentId: selections.class }));
+        }
+      } catch (_err) {
+        if (!cancelled) {
+          setAllowStrandWithoutSubject(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selections.class, dispatch]);
+
+  useEffect(() => {
+    if (!selections.class) return;
+
+    if (selections.subject) {
+      dispatch(fetchChildren({ entity: 'strands', parentEntity: 'subjects', parentId: selections.subject }));
+      return;
+    }
+
+    if (allowStrandWithoutSubject) {
+      dispatch(fetchChildren({ entity: 'strands', parentEntity: 'classes', parentId: selections.class }));
+    }
+  }, [selections.class, selections.subject, allowStrandWithoutSubject, dispatch]);
+
+  useEffect(() => {
+    if (selections.strand) {
+      dispatch(fetchChildren({ entity: 'subStrands', parentEntity: 'strands', parentId: selections.strand }));
+    }
+  }, [selections.strand, dispatch]);
 
   const handleSelectionChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -1587,6 +1644,7 @@ function TeacherDashboard() {
               selections={selections}
               handleSelectionChange={handleSelectionChange}
               isLoading={isLoading || planLoading}
+              allowStrandWithoutSubject={allowStrandWithoutSubject}
             />
 
             {subStrands.length > 0 && (
@@ -1674,6 +1732,7 @@ function TeacherDashboard() {
               selections={selections}
               handleSelectionChange={handleSelectionChange}
               isLoading={isLoading}
+              allowStrandWithoutSubject={allowStrandWithoutSubject}
             />
           </DialogContent>
           <DialogActions>
@@ -2071,6 +2130,7 @@ function TeacherDashboard() {
               selections={selections}
               handleSelectionChange={handleSelectionChange}
               isLoading={isLoading}
+              allowStrandWithoutSubject={allowStrandWithoutSubject}
             />
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} sm={6}>
@@ -2219,6 +2279,7 @@ function TeacherDashboard() {
               selections={selections}
               handleSelectionChange={handleSelectionChange}
               isLoading={isLoading}
+              allowStrandWithoutSubject={allowStrandWithoutSubject}
             />
             {subStrands.length > 0 && (
               <Paper sx={{ mt: 2, maxHeight: 300, overflow: 'auto', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
