@@ -121,10 +121,39 @@ MATH NOTATION RULES:
 - Write every mathematical expression, equation, fraction, exponent, root, ratio, inequality, or symbol inside LaTeX delimiters.
 - Use inline delimiters \\( ... \\) within sentences.
 - Use display delimiters \\[ ... \\] for standalone equations or worked steps.
+- Use EXACT delimiters with no spaces: write \\( not \\ (, and \\[ not \\ [.
+- Use single delimiters in output text: \\( ... \\) and \\[ ... \\], not double-escaped forms like \\\\( or \\\\[.
 - Do NOT rely on plain-text workarounds, Unicode superscripts/subscripts, or broken ASCII formatting for mathematics.
 - Write fractions as \\(\\frac{a}{b}\\), powers as \\(x^2\\), roots as \\(\\sqrt{49} = 7\\), multiplication as \\(\\times\\), and division as \\(\\div\\) when those symbols are being taught.
 - When showing worked examples, put each step on its own line using separate HTML lines or list items, not one continuous paragraph.
 `;
+}
+
+function normalizeMathMarkup(html = '') {
+  let normalized = String(html || '');
+
+  // Some model outputs accidentally escape delimiters twice (e.g., "\\(" instead of "\(").
+  normalized = normalized
+    .replace(/\\\\\(/g, '\\(')
+    .replace(/\\\\\)/g, '\\)')
+    .replace(/\\\\\[/g, '\\[')
+    .replace(/\\\\\]/g, '\\]');
+
+  // Fix malformed delimiters with spaces, e.g. "\ ( x + y \ )".
+  normalized = normalized
+    .replace(/\\\s+\(/g, '\\(')
+    .replace(/\\\s+\)/g, '\\)')
+    .replace(/\\\s+\[/g, '\\[')
+    .replace(/\\\s+\]/g, '\\]');
+
+  // Normalize common HTML-escaped backslash entity to keep math parseable.
+  normalized = normalized
+    .replace(/&bsol;\(/gi, '\\(')
+    .replace(/&bsol;\)/gi, '\\)')
+    .replace(/&bsol;\[/gi, '\\[')
+    .replace(/&bsol;\]/gi, '\\]');
+
+  return normalized;
 }
 
 function extractJson(text) {
@@ -2188,6 +2217,9 @@ REMEMBER: Return ONLY the HTML above, filled with appropriate content. Keep the 
   // convert any placeholder tokens into real <img> tags
   text = replacePlaceholdersWithImages(text);
 
+  // Repair malformed LaTeX delimiters so math renders reliably on the client.
+  text = normalizeMathMarkup(text);
+
   // Ensure lesson phase indicators remain visually clear and consistent.
   text = boldLessonPhaseIndicators(text);
 
@@ -2341,6 +2373,9 @@ REMEMBER: Return ONLY the HTML above, filled with student-friendly content. No m
   });
 
   text = replacePlaceholdersWithImages(text);
+
+  // Repair malformed LaTeX delimiters so math renders reliably on the client.
+  text = normalizeMathMarkup(text);
 
   return { text, provider, model, task: 'learnerNoteHTML', timestamp };
 }

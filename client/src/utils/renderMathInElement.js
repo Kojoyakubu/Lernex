@@ -6,10 +6,31 @@ const delimiters = [
   { left: '\\(', right: '\\)', display: false },
 ];
 
+function normalizeMathDelimiters(rawHtml = '') {
+  return String(rawHtml || '')
+    .replace(/\\\\\(/g, '\\(')
+    .replace(/\\\\\)/g, '\\)')
+    .replace(/\\\\\[/g, '\\[')
+    .replace(/\\\\\]/g, '\\]')
+    .replace(/\\\s+\(/g, '\\(')
+    .replace(/\\\s+\)/g, '\\)')
+    .replace(/\\\s+\[/g, '\\[')
+    .replace(/\\\s+\]/g, '\\]')
+    .replace(/&bsol;\(/gi, '\\(')
+    .replace(/&bsol;\)/gi, '\\)')
+    .replace(/&bsol;\[/gi, '\\[')
+    .replace(/&bsol;\]/gi, '\\]');
+}
+
 export default function renderMathInElement(element) {
   if (!element) return;
 
   try {
+    const normalizedHtml = normalizeMathDelimiters(element.innerHTML);
+    if (normalizedHtml !== element.innerHTML) {
+      element.innerHTML = normalizedHtml;
+    }
+
     renderMath(element, {
       delimiters,
       throwOnError: false,
