@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -35,6 +35,7 @@ import AiImage from '../components/AiImage';
 
 /* ✅ ADDED: PDF-only view */
 import LessonNotePdfView from '../components/LessonNotePdfView';
+import renderMathInElement from '../utils/renderMathInElement';
 
 const LessonNoteView = () => {
   const { id } = useParams();
@@ -50,6 +51,7 @@ const LessonNoteView = () => {
   }, [dispatch, id]);
 
   const elementId = useMemo(() => `lesson-note-${id}`, [id]);
+  const noteContentRef = useRef(null);
 
   /* ✅ ADDED: PDF element ID */
   const pdfElementId = useMemo(() => `pdf-lesson-note-${id}`, [id]);
@@ -80,6 +82,10 @@ const LessonNoteView = () => {
     const res = await dispatch(deleteLessonNote(id));
     if (!res.error) navigate('/teacher/dashboard');
   }, [dispatch, id, navigate]);
+
+  useEffect(() => {
+    renderMathInElement(noteContentRef.current);
+  }, [currentNote?.content]);
 
   if (isLoading) {
     return (
@@ -241,7 +247,7 @@ const LessonNoteView = () => {
             {new Date(currentNote.createdAt).toLocaleDateString()}
           </Typography>
 
-          <Box id={elementId}>
+          <Box id={elementId} ref={noteContentRef}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}

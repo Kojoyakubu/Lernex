@@ -96,7 +96,36 @@ Rules:
 - Do NOT add a marking scheme unless explicitly requested.
 - Only insert image blocks when they clearly enhance understanding.  
 - Follow Ghanaian examples and terminology where appropriate.
+
+${buildMathFormattingGuidance(subject)}
 `;
+
+function isMathematicsLikeSubject(subject = '') {
+  const normalized = String(subject || '').toLowerCase();
+  return [
+    'mathematics',
+    'math',
+    'numeracy',
+    'quantitative',
+    'algebra',
+    'geometry',
+    'arithmetic',
+  ].some((key) => normalized.includes(key));
+}
+
+function buildMathFormattingGuidance(subject = '') {
+  if (!isMathematicsLikeSubject(subject)) return '';
+
+  return `
+MATH NOTATION RULES:
+- Write every mathematical expression, equation, fraction, exponent, root, ratio, inequality, or symbol inside LaTeX delimiters.
+- Use inline delimiters \\( ... \\) within sentences.
+- Use display delimiters \\[ ... \\] for standalone equations or worked steps.
+- Do NOT rely on plain-text workarounds, Unicode superscripts/subscripts, or broken ASCII formatting for mathematics.
+- Write fractions as \\(\\frac{a}{b}\\), powers as \\(x^2\\), roots as \\(\\sqrt{49} = 7\\), multiplication as \\(\\times\\), and division as \\(\\div\\) when those symbols are being taught.
+- When showing worked examples, put each step on its own line using separate HTML lines or list items, not one continuous paragraph.
+`;
+}
 
 function extractJson(text) {
   if (!text) return '';
@@ -2056,6 +2085,8 @@ async function generateTeacherLessonNoteHTML(details = {}) {
   const prompt = `
 You are a Ghanaian master teacher and curriculum expert. Generate a professionally formatted HTML lesson note following Ghana's NaCCA (National Council for Curriculum and Assessment) structure.
 
+${buildMathFormattingGuidance(resolvedSubjectName)}
+
 CRITICAL RULES:
 1. Return ONLY valid HTML - no markdown, no code blocks, no explanations
 2. Start directly with HTML tags - no introductory text
@@ -2203,6 +2234,8 @@ You are a friendly Ghanaian teacher creating a well-structured, textbook-style s
 
 Transform the teacher lesson note into rich, student-friendly HTML.
 
+${buildMathFormattingGuidance(subjectName)}
+
 CRITICAL RULES:
 1. Return ONLY valid HTML. No markdown, no code blocks, no explanations.
 2. Start directly with HTML tags.
@@ -2331,6 +2364,8 @@ async function generateStructuredQuizJSON(details = {}) {
 
   const prompt = `
 You are an expert WAEC examiner creating a comprehensive quiz for ${className} students in ${subjectName}.
+
+${buildMathFormattingGuidance(subjectName)}
 
 Topic: "${topicText}"
 

@@ -20,8 +20,9 @@ import {
   Tooltip,
 } from '@mui/material';
 import DOMPurify from 'dompurify';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useContentProtection from '../hooks/useContentProtection';
+import renderMathInElement from '../utils/renderMathInElement';
 
 import {
   Article,
@@ -67,6 +68,8 @@ function BundleResultViewer({
 }) {
   const [activeTab, setActiveTab] = useState(0);
   const { protectionProps, protectionSx } = useContentProtection({ enabled: open });
+  const lessonNoteRef = useRef(null);
+  const learnerNoteRef = useRef(null);
 
   const { lessonNote, learnerNote, quiz } = bundleData || {};
   const sanitizedLessonNoteContent = useMemo(
@@ -77,6 +80,14 @@ function BundleResultViewer({
     () => DOMPurify.sanitize(learnerNote?.content || ''),
     [learnerNote?.content]
   );
+
+  useEffect(() => {
+    renderMathInElement(lessonNoteRef.current);
+  }, [sanitizedLessonNoteContent, open, activeTab]);
+
+  useEffect(() => {
+    renderMathInElement(learnerNoteRef.current);
+  }, [sanitizedLearnerNoteContent, open, activeTab]);
 
   if (!bundleData) return null;
 
@@ -242,6 +253,7 @@ function BundleResultViewer({
             </Typography>
             <Divider sx={{ my: 2 }} />
             <Box
+              ref={lessonNoteRef}
               dangerouslySetInnerHTML={{ __html: sanitizedLessonNoteContent }}
               sx={{
                 '& h2': { fontSize: '1.5rem', fontWeight: 600, mt: 3, mb: 2 },
@@ -285,6 +297,7 @@ function BundleResultViewer({
               {learnerNote?.status === 'draft' && ' - Review and publish to make available to students'}
             </Alert>
             <Box
+              ref={learnerNoteRef}
               dangerouslySetInnerHTML={{ __html: sanitizedLearnerNoteContent }}
               sx={{
                 '& h1': { fontSize: '1.85rem', fontWeight: 700, mt: 1, mb: 2, color: 'text.primary' },

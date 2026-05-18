@@ -20,9 +20,10 @@ import {
   ExpandMore,
 } from '@mui/icons-material';
 import DOMPurify from 'dompurify';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import DialogFullscreenTitle from './DialogFullscreenTitle';
 import useContentProtection from '../hooks/useContentProtection';
+import renderMathInElement from '../utils/renderMathInElement';
 
 
 const contentSx = {
@@ -99,6 +100,7 @@ export default function NotePreviewDialog({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const effectiveFullScreen = fullScreen || isMobile;
   const { protectionProps, protectionSx } = useContentProtection({ enabled: open });
+  const contentRef = useRef(null);
   const sanitizedSegments = useMemo(
     () => segments.map((segment) => (
       segment.type === 'text'
@@ -107,6 +109,10 @@ export default function NotePreviewDialog({
     )),
     [segments]
   );
+
+  useEffect(() => {
+    renderMathInElement(contentRef.current);
+  }, [sanitizedSegments, open]);
 
   return (
     <Dialog
@@ -146,7 +152,7 @@ export default function NotePreviewDialog({
             overflowX: { xs: 'auto', sm: 'visible' },
           }}
         >
-          <Box sx={isPdfExporting ? compactContentSx : contentSx}>
+          <Box ref={contentRef} sx={isPdfExporting ? compactContentSx : contentSx}>
             {sanitizedSegments.map((seg, idx) => {
               if (seg.type === 'text') {
                 return <Box key={idx} dangerouslySetInnerHTML={{ __html: seg.safeHtml }} />;
