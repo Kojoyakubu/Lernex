@@ -188,26 +188,6 @@ const getChildren = asyncHandler(async (req, res) => {
     throw new Error('Invalid parent ID.');
   }
 
-  const key = `${parentType}-${childType}`;
-
-  // KG flow support: allow strands to be retrieved directly from class.
-  // This lets the client skip explicit subject selection when needed.
-  if (key === 'classes-strands') {
-    const classSubjects = await Subject.find({ class: parentId }).select('_id').lean();
-    const subjectIds = classSubjects.map((item) => item._id);
-
-    if (!subjectIds.length) {
-      return res.json([]);
-    }
-
-    const data = await Strand.find({ subject: { $in: subjectIds } })
-      .populate({ path: 'subject', select: 'name class', populate: { path: 'class', select: 'name' } })
-      .sort({ createdAt: 1 })
-      .lean();
-
-    return res.json(data);
-  }
-
   const filterMap = {
     'levels-classes': { model: Class, filter: { level: parentId }, populate: 'level' },
     'classes-subjects': { model: Subject, filter: { class: parentId }, populate: 'class' },
@@ -215,6 +195,8 @@ const getChildren = asyncHandler(async (req, res) => {
     'strands-sub-strands': { model: SubStrand, filter: { strand: parentId }, populate: 'strand' },
     'strands-subStrands': { model: SubStrand, filter: { strand: parentId }, populate: 'strand' },
   };
+
+  const key = `${parentType}-${childType}`;
   const config = filterMap[key];
 
   if (!config) {
