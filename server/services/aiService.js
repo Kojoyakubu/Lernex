@@ -9,6 +9,7 @@
 
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const OpenAI = require('openai');
+const katex = require('katex');
 
 // Optional Claude (only if installed)
 let Anthropic = null;
@@ -154,6 +155,38 @@ function normalizeMathMarkup(html = '') {
     .replace(/&bsol;\]/gi, '\\]');
 
   return normalized;
+}
+
+function renderMathMarkupToHtml(html = '', subject = '') {
+  if (!isMathematicsLikeSubject(subject)) return String(html || '');
+
+  const renderExpression = (expression, displayMode) => {
+    const normalizedExpression = String(expression || '').trim();
+    if (!normalizedExpression) return expression;
+
+    try {
+      return katex.renderToString(normalizedExpression, {
+        displayMode,
+        throwOnError: false,
+        strict: 'ignore',
+        output: 'htmlAndMathml',
+      });
+    } catch (_error) {
+      return expression;
+    }
+  };
+
+  let rendered = normalizeMathMarkup(html);
+
+  rendered = rendered.replace(/\\\[([\s\S]*?)\\\]/g, (_match, expression) =>
+    renderExpression(expression, true)
+  );
+
+  rendered = rendered.replace(/\\\(([\s\S]*?)\\\)/g, (_match, expression) =>
+    renderExpression(expression, false)
+  );
+
+  return rendered;
 }
 
 function extractJson(text) {
@@ -2220,6 +2253,9 @@ REMEMBER: Return ONLY the HTML above, filled with appropriate content. Keep the 
   // Repair malformed LaTeX delimiters so math renders reliably on the client.
   text = normalizeMathMarkup(text);
 
+  // Convert math expressions to KaTeX HTML before saving.
+  text = renderMathMarkupToHtml(text, resolvedSubjectName);
+
   // Ensure lesson phase indicators remain visually clear and consistent.
   text = boldLessonPhaseIndicators(text);
 
@@ -2376,6 +2412,9 @@ REMEMBER: Return ONLY the HTML above, filled with student-friendly content. No m
 
   // Repair malformed LaTeX delimiters so math renders reliably on the client.
   text = normalizeMathMarkup(text);
+
+  // Convert math expressions to KaTeX HTML before saving.
+  text = renderMathMarkupToHtml(text, subjectName);
 
   return { text, provider, model, task: 'learnerNoteHTML', timestamp };
 }

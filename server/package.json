@@ -24,6 +24,7 @@
     "google-auth-library": "^10.6.2",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "katex": "^0.16.47",
     "markdown-it": "^14.1.0",
     "marked": "^16.4.0",
     "mongoose": "^8.4.1",
