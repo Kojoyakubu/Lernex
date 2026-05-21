@@ -149,7 +149,41 @@ const generateLessonNote = asyncHandler(async (req, res) => {
  * @access  Private (Teacher)
  */
 const getMyLessonNotes = asyncHandler(async (req, res) => {
-  const notes = await LessonNote.find({ teacher: req.user.id })
+  const { groupBy, facilitator } = req.query;
+
+  // If client requests grouping by facilitator, return grouped summary
+  if (String(groupBy || '').toLowerCase() === 'facilitator') {
+    const teacherId = mongoose.Types.ObjectId(req.user.id);
+
+    const groups = await LessonNote.aggregate([
+      { $match: { teacher: teacherId } },
+      {
+        $group: {
+          _id: { $ifNull: ['$generationContext.facilitatorName', ''] },
+          notes: {
+            $push: {
+              _id: '$_id',
+              subStrand: '$subStrand',
+              createdAt: '$createdAt',
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $project: { _id: 0, facilitatorName: '$_id', notes: 1, count: 1 } },
+      { $sort: { facilitatorName: 1 } },
+    ]);
+
+    return res.json(groups);
+  }
+
+  // If filtering by facilitator, return populated notes for that facilitator
+  const query = { teacher: req.user.id };
+  if (facilitator !== undefined && facilitator !== null && String(facilitator).trim() !== '') {
+    query['generationContext.facilitatorName'] = String(facilitator).trim();
+  }
+
+  const notes = await LessonNote.find(query)
     .populate({
       path: 'subStrand',
       select: 'name',
@@ -164,6 +198,7 @@ const getMyLessonNotes = asyncHandler(async (req, res) => {
       },
     })
     .sort({ createdAt: -1 });
+
   res.json(notes);
 });
 

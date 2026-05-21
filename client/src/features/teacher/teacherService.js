@@ -48,8 +48,9 @@ const wakeUpServer = async () => {
   }
 };
 
-const getMyLessonNotes = async () => {
-  const response = await api.get('/api/teacher/lesson-notes');
+const getMyLessonNotes = async (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  const response = await api.get(`/api/teacher/lesson-notes${queryString ? `?${queryString}` : ''}`);
   return response.data;
 };
 
