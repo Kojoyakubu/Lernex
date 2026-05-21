@@ -1018,17 +1018,19 @@ function buildTeacherLessonNoteTemplate(templateDesign, fields) {
       line-height: 1.58;
     }
     .warm-community .hero {
-      background: linear-gradient(135deg, #8b4c27 0%, #c77732 100%);
-      color: #fff7ed;
+      background: #fff7ed;
+      color: #4a3427;
+      border: 1px solid #ecd8c5;
       border-radius: 16px;
-      padding: 16px 18px;
+      padding: 12px 14px;
       margin-bottom: 16px;
     }
-    .warm-community .hero h2 { margin: 0 0 8px 0; font-size: 1.45rem; }
+    .warm-community .hero h2 { margin: 0 0 8px 0; font-size: 1.35rem; }
     .warm-community .badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .warm-community .badge {
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.28);
+      background: #fff;
+      border: 1px solid #d8c2a4;
+      color: #4a3427;
       border-radius: 999px;
       padding: 4px 10px;
       font-size: 0.78rem;
@@ -1167,19 +1169,21 @@ function buildTeacherLessonNoteTemplate(templateDesign, fields) {
       line-height: 1.5;
     }
     .structured-workshop .banner {
-      background: linear-gradient(135deg, #362158 0%, #6f45a7 100%);
-      color: #ffffff;
+      background: #eef2ff;
+      color: #1f2333;
+      border: 1px solid #dbe4ee;
       border-radius: 14px;
-      padding: 16px;
+      padding: 14px;
       margin-bottom: 14px;
     }
-    .structured-workshop .banner h2 { margin: 0 0 8px 0; font-size: 1.42rem; }
+    .structured-workshop .banner h2 { margin: 0 0 8px 0; font-size: 1.35rem; }
     .structured-workshop .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .structured-workshop .tag {
       border-radius: 8px;
       padding: 4px 10px;
-      background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.22);
+      background: #ffffff;
+      border: 1px solid #dbe4ee;
+      color: #1f2333;
       font-size: 0.78rem;
       font-weight: 700;
     }
@@ -1343,20 +1347,22 @@ function buildTeacherLessonNoteTemplate(templateDesign, fields) {
       line-height: 1.5;
     }
     .note-header {
-      background: linear-gradient(135deg, #0f2a43 0%, #1f4d7a 100%);
-      color: #ffffff;
+      background: #edf2f7;
+      color: #1f2937;
+      border: 1px solid #cbd5e1;
       border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 14px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
     }
-    .note-header h2 { margin: 0 0 6px 0; font-size: 1.4rem; }
-    .meta-strip { font-size: 0.85rem; opacity: 0.95; }
+    .note-header h2 { margin: 0 0 6px 0; font-size: 1.25rem; }
+    .meta-strip { font-size: 0.85rem; opacity: 0.85; }
     .chip-row { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
     .chip {
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.85);
+      border: 1px solid #cbd5e1;
+      color: #334155;
       border-radius: 999px;
-      padding: 2px 10px;
+      padding: 2px 8px;
       font-size: 0.78rem;
       font-weight: 600;
     }
@@ -1382,7 +1388,7 @@ function buildTeacherLessonNoteTemplate(templateDesign, fields) {
       font-size: 0.92rem;
     }
     .teacher-table td, .teacher-table th, .phase-table td, .phase-table th {
-      border: 1px solid #cfd8e3;
+      border: 1.5px solid #cfd8e3;
       padding: 8px;
       vertical-align: top;
       word-break: break-word;
@@ -1707,7 +1713,7 @@ function buildTeacherLessonNoteRestyleWrapper(templateDesign, metadata = {}, bod
     }
     .lesson-note.restyled.clean-minimal .restyled-body th,
     .lesson-note.restyled.clean-minimal .restyled-body td {
-      border: 1px solid #d9e2ec;
+      border: 1.5px solid #d9e2ec;
       padding: 9px;
       vertical-align: top;
       word-break: break-word;
@@ -1751,18 +1757,20 @@ function buildTeacherLessonNoteRestyleWrapper(templateDesign, metadata = {}, bod
       line-height: 1.6;
     }
     .lesson-note.restyled.warm-community .restyle-header {
-      background: linear-gradient(135deg, #8b4c27 0%, #c77732 100%);
-      color: #fff8f0;
+      background: #fff7ed;
+      color: #4a3427;
+      border: 1px solid #ecd8c5;
       border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
+      padding: 14px;
+      margin-bottom: 14px;
     }
-    .lesson-note.restyled.warm-community .restyle-header h1 { margin: 0 0 8px 0; font-size: 1.4rem; }
-    .lesson-note.restyled.warm-community .restyle-subtitle { margin: 0 0 10px 0; opacity: 0.95; }
+    .lesson-note.restyled.warm-community .restyle-header h1 { margin: 0 0 8px 0; font-size: 1.35rem; }
+    .lesson-note.restyled.warm-community .restyle-subtitle { margin: 0 0 10px 0; opacity: 0.85; }
     .lesson-note.restyled.warm-community .restyle-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .lesson-note.restyled.warm-community .restyle-chip {
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.28);
+      background: #fff;
+      border: 1px solid #ecd8c5;
+      color: #4a3427;
       border-radius: 999px;
       padding: 4px 10px;
       font-size: 0.76rem;
@@ -1784,7 +1792,7 @@ function buildTeacherLessonNoteRestyleWrapper(templateDesign, metadata = {}, bod
     }
     .lesson-note.restyled.warm-community .restyled-body th,
     .lesson-note.restyled.warm-community .restyled-body td {
-      border: 1px solid #eddccc;
+      border: 1.5px solid #eddccc;
       padding: 9px;
       vertical-align: top;
       word-break: break-word;
@@ -1824,20 +1832,22 @@ function buildTeacherLessonNoteRestyleWrapper(templateDesign, metadata = {}, bod
       line-height: 1.56;
     }
     .lesson-note.restyled.structured-workshop .restyle-header {
-      background: linear-gradient(135deg, #362158 0%, #6f45a7 100%);
-      color: #fff;
+      background: #eef2ff;
+      color: #1f2333;
+      border: 1px solid #dbe4ee;
       border-radius: 14px;
-      padding: 16px;
+      padding: 14px;
       margin-bottom: 14px;
     }
-    .lesson-note.restyled.structured-workshop .restyle-header h1 { margin: 0 0 8px 0; font-size: 1.4rem; }
-    .lesson-note.restyled.structured-workshop .restyle-subtitle { margin: 0 0 10px 0; opacity: 0.95; }
+    .lesson-note.restyled.structured-workshop .restyle-header h1 { margin: 0 0 8px 0; font-size: 1.35rem; }
+    .lesson-note.restyled.structured-workshop .restyle-subtitle { margin: 0 0 10px 0; opacity: 0.85; }
     .lesson-note.restyled.structured-workshop .restyle-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .lesson-note.restyled.structured-workshop .restyle-chip {
-      background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.24);
+      background: #ffffff;
+      border: 1px solid #dbe4ee;
       border-radius: 8px;
       padding: 4px 10px;
+      color: #1f2333;
       font-size: 0.76rem;
       font-weight: 700;
     }
@@ -1857,7 +1867,7 @@ function buildTeacherLessonNoteRestyleWrapper(templateDesign, metadata = {}, bod
     }
     .lesson-note.restyled.structured-workshop .restyled-body th,
     .lesson-note.restyled.structured-workshop .restyled-body td {
-      border: 1px solid #ddd2ee;
+      border: 1.5px solid #ddd2ee;
       padding: 9px;
       vertical-align: top;
       word-break: break-word;
@@ -1896,18 +1906,20 @@ function buildTeacherLessonNoteRestyleWrapper(templateDesign, metadata = {}, bod
       line-height: 1.56;
     }
     .lesson-note.restyled.modern-academic .restyle-header {
-      background: linear-gradient(135deg, #0f2a43 0%, #1f4d7a 100%);
-      color: #ffffff;
+      background: #eff6ff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
       border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 14px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
     }
-    .lesson-note.restyled.modern-academic .restyle-header h1 { margin: 0 0 8px 0; font-size: 1.35rem; }
-    .lesson-note.restyled.modern-academic .restyle-subtitle { margin: 0 0 10px 0; opacity: 0.95; }
+    .lesson-note.restyled.modern-academic .restyle-header h1 { margin: 0 0 8px 0; font-size: 1.25rem; }
+    .lesson-note.restyled.modern-academic .restyle-subtitle { margin: 0 0 10px 0; opacity: 0.8; }
     .lesson-note.restyled.modern-academic .restyle-chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .lesson-note.restyled.modern-academic .restyle-chip {
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.35);
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
       border-radius: 999px;
       padding: 3px 10px;
       font-size: 0.76rem;
@@ -1929,7 +1941,7 @@ function buildTeacherLessonNoteRestyleWrapper(templateDesign, metadata = {}, bod
     }
     .lesson-note.restyled.modern-academic .restyled-body th,
     .lesson-note.restyled.modern-academic .restyled-body td {
-      border: 1px solid #cfd8e3;
+      border: 1.5px solid #cfd8e3;
       padding: 9px;
       vertical-align: top;
       word-break: break-word;
