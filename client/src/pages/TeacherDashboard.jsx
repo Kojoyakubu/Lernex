@@ -962,22 +962,22 @@ function TeacherDashboard() {
       <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: Arial, sans-serif; color: #2E3A44; }
-        h1 { font-size: 1.4rem; font-weight: 700; margin: 0.42rem 0 0.32rem; }
-        h2 { font-size: 1.2rem; font-weight: 600; margin: 0.42rem 0 0.28rem; }
-        h3 { font-size: 1.05rem; font-weight: 600; margin: 0.32rem 0 0.2rem; }
-        table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 0.3rem 0; font-size: 0.93rem; }
-        td, th { border: 1px solid #ddd; padding: 3px 6px; vertical-align: top; white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
+        h1 { font-size: 1.4rem; font-weight: 700; margin: 0.25rem 0 0.25rem; }
+        h2 { font-size: 1.2rem; font-weight: 600; margin: 0.25rem 0 0.2rem; }
+        h3 { font-size: 1.05rem; font-weight: 600; margin: 0.2rem 0 0.14rem; }
+        table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 0.2rem 0; font-size: 0.92rem; }
+        td, th { border: 1px solid #ddd; padding: 2px 5px; vertical-align: top; white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
         th { background-color: #f5f5f5; }
-        p { line-height: 1.22; margin: 0.2rem 0; font-size: 0.96rem; word-break: break-word; overflow-wrap: anywhere; }
-        li { word-break: break-word; overflow-wrap: anywhere; margin-bottom: 1px; font-size: 0.96rem; line-height: 1.22; }
-        ul, ol { padding-left: 1.6rem; margin: 0.24rem 0 0.24rem 1.6rem; }
-        section { border: 1px solid #eceff3; border-radius: 0.25rem; padding: 0.4rem; margin: 0.28rem 0; }
-        figure { page-break-inside: avoid; break-inside: avoid; margin: 0.3rem 0; text-align: center; }
+        p { line-height: 1.2; margin: 0.14rem 0; font-size: 0.94rem; word-break: break-word; overflow-wrap: anywhere; }
+        li { word-break: break-word; overflow-wrap: anywhere; margin-bottom: 0.08rem; font-size: 0.94rem; line-height: 1.2; }
+        ul, ol { padding-left: 1.4rem; margin: 0.18rem 0 0.18rem 1.4rem; }
+        section { border: 1px solid #eceff3; border-radius: 0.2rem; padding: 0.28rem; margin: 0.2rem 0; }
+        figure { page-break-inside: avoid; break-inside: avoid; margin: 0.2rem 0; text-align: center; }
         img { max-width: 100%; height: auto; }
-        figcaption { margin-top: 0.5rem; font-size: 0.92rem; color: #5f6b76; }
+        figcaption { margin-top: 0.35rem; font-size: 0.9rem; color: #5f6b76; }
         .first-child-wrapper > :first-child { margin-top: 0 !important; padding-top: 0; }
       </style>
-      <div class="first-child-wrapper" style="font-family: Arial, sans-serif; line-height: 1.22; padding: 0.2px; width: 920px; max-width: 920px; box-sizing: border-box; background-color: #ffffff;">
+      <div class="first-child-wrapper" style="font-family: Arial, sans-serif; line-height: 1.2; padding: 0.2px; width: 920px; max-width: 920px; box-sizing: border-box; background-color: #ffffff;">
         ${contentHtml}
       </div>
     `;
