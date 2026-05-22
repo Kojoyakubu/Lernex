@@ -246,6 +246,7 @@ function TeacherDashboard() {
   const [lessonPlanSelectedSubStrands, setLessonPlanSelectedSubStrands] = useState([]);
   const [notesClassFilter, setNotesClassFilter] = useState('');
   const [notesSubjectFilter, setNotesSubjectFilter] = useState('');
+  const [notesFacilitatorFilter, setNotesFacilitatorFilter] = useState('');
   const [learnerNotesClassFilter, setLearnerNotesClassFilter] = useState('');
   const [learnerNotesSubjectFilter, setLearnerNotesSubjectFilter] = useState('');
   const [selectedNoteIds, setSelectedNoteIds] = useState(new Set());
@@ -367,6 +368,37 @@ function TeacherDashboard() {
         && String(noteSubjectId) === String(notesSubjectFilter);
     });
   }, [lessonNotes, notesClassFilter, notesSubjectFilter]);
+
+  const lessonNoteFacilitatorOptions = useMemo(() => {
+    if (!notesClassFilter || !notesSubjectFilter) return [];
+    const facilitatorMap = new Map();
+    lessonNotesBySelection.forEach((note) => {
+      const facilitatorName = String(note?.generationContext?.facilitatorName || '').trim() || 'Unknown facilitator';
+      if (!facilitatorMap.has(facilitatorName)) {
+        facilitatorMap.set(facilitatorName, facilitatorName);
+      }
+    });
+    return Array.from(facilitatorMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [lessonNotesBySelection, notesClassFilter, notesSubjectFilter]);
+
+  const lessonNotesByFacilitator = useMemo(() => {
+    if (!notesClassFilter || !notesSubjectFilter) return [];
+    const groups = new Map();
+    lessonNotesBySelection.forEach((note) => {
+      const facilitatorName = String(note?.generationContext?.facilitatorName || '').trim() || 'Unknown facilitator';
+      if (notesFacilitatorFilter && facilitatorName !== notesFacilitatorFilter) return;
+      if (!groups.has(facilitatorName)) {
+        groups.set(facilitatorName, []);
+      }
+      groups.get(facilitatorName).push(note);
+    });
+    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [lessonNotesBySelection, notesFacilitatorFilter, notesClassFilter, notesSubjectFilter]);
+
+  const displayedLessonNotes = useMemo(
+    () => lessonNotesByFacilitator.flatMap(([, notes]) => notes),
+    [lessonNotesByFacilitator]
+  );
 
   const draftMetaBySubStrandId = useMemo(() => {
     const metaMap = new Map();
@@ -1747,6 +1779,7 @@ function TeacherDashboard() {
             closeDialog();
             setNotesClassFilter('');
             setNotesSubjectFilter('');
+            setNotesFacilitatorFilter('');
             setSelectedNoteIds(new Set());
           }}
           fullScreen={isDialogFullscreen('myLessonNotes')}
@@ -1766,6 +1799,7 @@ function TeacherDashboard() {
                     onChange={(event) => {
                       setNotesClassFilter(event.target.value);
                       setNotesSubjectFilter('');
+                      setNotesFacilitatorFilter('');
                       setSelectedNoteIds(new Set());
                     }}
                   >
@@ -1783,10 +1817,34 @@ function TeacherDashboard() {
                     labelId="notes-subject-label"
                     label="Subject"
                     value={notesSubjectFilter}
-                    onChange={(event) => { setNotesSubjectFilter(event.target.value); setSelectedNoteIds(new Set()); }}
+                    onChange={(event) => {
+                      setNotesSubjectFilter(event.target.value);
+                      setNotesFacilitatorFilter('');
+                      setSelectedNoteIds(new Set());
+                    }}
                   >
                     {lessonNoteSubjectOptions.map((option) => (
                       <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small" disabled={!notesSubjectFilter || lessonNoteFacilitatorOptions.length === 0}>
+                  <InputLabel id="notes-facilitator-label">Facilitator</InputLabel>
+                  <Select
+                    labelId="notes-facilitator-label"
+                    label="Facilitator"
+                    value={notesFacilitatorFilter}
+                    onChange={(event) => {
+                      setNotesFacilitatorFilter(event.target.value);
+                      setSelectedNoteIds(new Set());
+                    }}
+                  >
+                    <MenuItem value="">All facilitators</MenuItem>
+                    {lessonNoteFacilitatorOptions.map((facilitator) => (
+                      <MenuItem key={facilitator} value={facilitator}>{facilitator}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
@@ -1799,17 +1857,21 @@ function TeacherDashboard() {
               <Typography variant="body2" color="text.secondary">Select a subject to view notes.</Typography>
             ) : lessonNotesBySelection.length === 0 ? (
               <Typography variant="body2" color="text.secondary">No lesson notes found for this class and subject.</Typography>
+            ) : lessonNotesByFacilitator.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No lesson notes found for this class, subject and facilitator selection.
+              </Typography>
             ) : (
               <>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Checkbox
                       size="small"
-                      checked={selectedNoteIds.size === lessonNotesBySelection.length}
-                      indeterminate={selectedNoteIds.size > 0 && selectedNoteIds.size < lessonNotesBySelection.length}
+                      checked={selectedNoteIds.size === displayedLessonNotes.length && displayedLessonNotes.length > 0}
+                      indeterminate={selectedNoteIds.size > 0 && selectedNoteIds.size < displayedLessonNotes.length}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedNoteIds(new Set(lessonNotesBySelection.map((n) => n._id)));
+                          setSelectedNoteIds(new Set(displayedLessonNotes.map((n) => n._id)));
                         } else {
                           setSelectedNoteIds(new Set());
                         }
@@ -1846,56 +1908,63 @@ function TeacherDashboard() {
                     </>
                   )}
                 </Box>
-                <List>
-                  {lessonNotesBySelection.map((note) => (
-                    <Paper key={note._id} sx={dialogListCardSx}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Checkbox
-                            size="small"
-                            checked={selectedNoteIds.has(note._id)}
-                            onChange={(e) => {
-                              setSelectedNoteIds((prev) => {
-                                const next = new Set(prev);
-                                if (e.target.checked) next.add(note._id);
-                                else next.delete(note._id);
-                                return next;
-                              });
-                            }}
-                          />
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                              {getLessonNoteName(note)}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Created: {note.createdAt ? new Date(note.createdAt).toLocaleString() : 'Unknown'}
-                            </Typography>
+                {lessonNotesByFacilitator.map(([facilitatorName, facilitatorNotes]) => (
+                  <Box key={facilitatorName} sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                      Facilitator: {facilitatorName} ({facilitatorNotes.length})
+                    </Typography>
+                    <List disablePadding>
+                      {facilitatorNotes.map((note) => (
+                        <Paper key={note._id} sx={{ ...dialogListCardSx, mb: 1 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Checkbox
+                                size="small"
+                                checked={selectedNoteIds.has(note._id)}
+                                onChange={(e) => {
+                                  setSelectedNoteIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (e.target.checked) next.add(note._id);
+                                    else next.delete(note._id);
+                                    return next;
+                                  });
+                                }}
+                              />
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                                  {getLessonNoteName(note)}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Created: {note.createdAt ? new Date(note.createdAt).toLocaleString() : 'Unknown'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Stack direction="row" spacing={1}>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => {
+                                  displayNote(note);
+                                  closeDialog();
+                                }}
+                              >
+                                Open
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                onClick={() => setNoteToDelete(note)}
+                              >
+                                Delete
+                              </Button>
+                            </Stack>
                           </Box>
-                        </Box>
-                        <Stack direction="row" spacing={1}>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => {
-                              displayNote(note);
-                              closeDialog();
-                            }}
-                          >
-                            Open
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={() => setNoteToDelete(note)}
-                          >
-                            Delete
-                          </Button>
-                        </Stack>
-                      </Box>
-                    </Paper>
-                  ))}
-                </List>
+                        </Paper>
+                      ))}
+                    </List>
+                  </Box>
+                ))}
               </>
             )}
           </DialogContent>
@@ -1905,6 +1974,7 @@ function TeacherDashboard() {
                 closeDialog();
                 setNotesClassFilter('');
                 setNotesSubjectFilter('');
+                setNotesFacilitatorFilter('');
                 setSelectedNoteIds(new Set());
               }}
             >
