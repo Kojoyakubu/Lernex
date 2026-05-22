@@ -835,11 +835,14 @@ function TeacherDashboard() {
     const elementId = `paid-download-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const tempDiv = document.createElement('div');
     tempDiv.id = elementId;
-    tempDiv.innerHTML = htmlContent;
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.top = '0';
-    tempDiv.style.width = '820px';
+    tempDiv.style.width = '920px';
+    tempDiv.style.maxWidth = '920px';
+    tempDiv.style.boxSizing = 'border-box';
+    tempDiv.style.backgroundColor = '#ffffff';
+    tempDiv.innerHTML = htmlContent;
     document.body.appendChild(tempDiv);
 
     try {
@@ -851,6 +854,7 @@ function TeacherDashboard() {
             useCORS: true,
             scrollX: 0,
             scrollY: 0,
+            windowWidth: 920,
           },
           pagebreak: {
             mode: ['css', 'legacy'],
