@@ -42,9 +42,12 @@ function getCurrentUserId() {
   }
 }
 
-function getSuggestionKey(classId, subjectId) {
+function getSuggestionKey(classId, subjectId, facilitatorName) {
   const userId = getCurrentUserId();
-  if (userId && classId && subjectId) return `lernex-fsugg-${userId}-${classId}-${subjectId}`;
+  const normalizedFacilitator = String(facilitatorName || '').trim().toLowerCase();
+  if (userId && classId && subjectId && normalizedFacilitator) {
+    return `lernex-fsugg-${userId}-${classId}-${subjectId}-${encodeURIComponent(normalizedFacilitator)}`;
+  }
   return null;
 }
 
@@ -56,8 +59,8 @@ function getFacilitatorMemoryKey(classId, subjectId, facilitatorName) {
   return `lernex-facilitator-memory-${userId}-${classId}-${subjectId}-${encodeURIComponent(normalizedFacilitator)}`;
 }
 
-function loadFieldSuggestions(classId, subjectId) {
-  const key = getSuggestionKey(classId, subjectId);
+function loadFieldSuggestions(classId, subjectId, facilitatorName) {
+  const key = getSuggestionKey(classId, subjectId, facilitatorName);
   if (!key) return {};
   try {
     const raw = localStorage.getItem(key);
@@ -67,11 +70,11 @@ function loadFieldSuggestions(classId, subjectId) {
   }
 }
 
-function appendFieldSuggestions(classId, subjectId, values) {
-  const key = getSuggestionKey(classId, subjectId);
+function appendFieldSuggestions(classId, subjectId, values, facilitatorName) {
+  const key = getSuggestionKey(classId, subjectId, facilitatorName);
   if (!key) return;
   try {
-    const existing = loadFieldSuggestions(classId, subjectId);
+    const existing = loadFieldSuggestions(classId, subjectId, facilitatorName);
     const updated = { ...existing };
     SUGGESTION_FIELDS.forEach((field) => {
       const val = (values[field] || '').trim();
@@ -308,7 +311,7 @@ function LessonNoteForm({
       const memory = loadFacilitatorMemory(classId, subjectId, initialFacilitator);
       const initialSessions = memory?.sessionsPerWeek || savedPrefs.sessionsPerWeek || 1;
 
-      setFieldSuggestions(loadFieldSuggestions(classId, subjectId));
+      setFieldSuggestions(loadFieldSuggestions(classId, subjectId, initialFacilitator));
       setFormData({
         school: defaultSchoolName || savedPrefs.school || '',
         facilitatorName: initialFacilitator,
@@ -332,6 +335,8 @@ function LessonNoteForm({
   useEffect(() => {
     const facilitatorName = String(formData.facilitatorName || '').trim();
     if (!facilitatorName || !classId || !subjectId) return;
+
+    setFieldSuggestions(loadFieldSuggestions(classId, subjectId, facilitatorName));
 
     const memory = loadFacilitatorMemory(classId, subjectId, facilitatorName);
     if (!memory) return;
@@ -509,7 +514,7 @@ function LessonNoteForm({
           weeklyOverrides,
         })
       );
-      appendFieldSuggestions(classId, subjectId, formData);
+      appendFieldSuggestions(classId, subjectId, formData, formData.facilitatorName);
       saveFacilitatorMemory(classId, subjectId, formData.facilitatorName, {
         term: formData.term,
         classSize: formData.classSize,
