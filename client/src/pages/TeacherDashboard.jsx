@@ -31,6 +31,7 @@ import {
 // utilities for image extraction & fetching
 import { segmentHtmlWithImages, removeImageBlocks } from '../utils/imageExtractor';
 import { fetchImageForQuery } from '../services/imageService';
+import DOMPurify from 'dompurify';
 import { downloadAsPdf } from '../utils/downloadHelper';
 import teacherService from '../features/teacher/teacherService';
 import LessonBundleForm from '../components/LessonBundleForm'; 
@@ -843,7 +844,19 @@ function TeacherDashboard() {
 
     try {
       if (format === 'pdf') {
-        await downloadAsPdf(elementId, baseName, {});
+        await downloadAsPdf(elementId, baseName, {
+          margin: [2.5, 1, 2.5, 1],
+          html2canvas: {
+            scale: 1.6,
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0,
+          },
+          pagebreak: {
+            mode: ['css', 'legacy'],
+            avoid: ['img', 'figure'],
+          },
+        });
       } else if (format === 'txt') {
         const tmp = document.createElement('div');
         tmp.innerHTML = htmlContent;
@@ -909,6 +922,58 @@ function TeacherDashboard() {
     }
   }, [DOWNLOAD_FEE_GHS, exportHtmlContent, processDownloadPayment]);
 
+  const buildPreviewHtmlForNote = useCallback(async (note) => {
+    const segments = segmentHtmlWithImages(note?.content || '');
+    const imagePromises = segments.map(async (segment) => {
+      if (segment.type !== 'image') return '';
+      const query = segment.meta?.search_query || segment.meta?.title || '';
+      if (!query) return '';
+      try {
+        return await fetchImageForQuery(query);
+      } catch {
+        return '';
+      }
+    });
+
+    const imageUrls = await Promise.all(imagePromises);
+    const contentHtml = segments.map((segment, idx) => {
+      if (segment.type === 'text') {
+        return DOMPurify.sanitize(segment.html || '');
+      }
+      const imgUrl = imageUrls[idx] || '';
+      if (!imgUrl) return '';
+      const caption = segment.meta?.title
+        ? `<figcaption style="margin-top: 6px; font-size: 0.92rem; color: #5f6b76;">${DOMPurify.sanitize(segment.meta.title)}</figcaption>`
+        : '';
+      const altText = DOMPurify.sanitize(segment.meta?.title || '');
+      return `
+        <figure style="margin: 16px 0; text-align: center;">
+          <img src="${imgUrl}" alt="${altText}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #d8dee9;" />
+          ${caption}
+        </figure>
+      `;
+    }).join('');
+
+    return `
+      <style>
+        h1 { font-size: 1.8rem; font-weight: 700; margin: 1.25rem 0 0.75rem; }
+        h2 { font-size: 1.5rem; font-weight: 600; margin: 1rem 0 0.75rem; }
+        h3 { font-size: 1.25rem; font-weight: 600; margin: 0.85rem 0 0.5rem; }
+        p, li { line-height: 1.6; margin: 0.45rem 0; }
+        ul, ol { margin: 0.5rem 0 1rem; padding-left: 1.2rem; }
+        table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+        th { background-color: #f5f5f5; }
+        figure { margin: 16px 0; text-align: center; }
+        img { max-width: 100%; height: auto; }
+        figcaption { margin-top: 8px; font-size: 0.92rem; color: #5f6b76; }
+      </style>
+      <div style="font-family: Arial, sans-serif; color: #2E3A44; line-height: 1.6; padding: 24px; box-sizing: border-box;">
+        ${contentHtml}
+      </div>
+    `;
+  }, []);
+
   const handleBulkDownload = useCallback(async (format) => {
     if (!selectedNoteIds.size) return;
 
@@ -930,9 +995,13 @@ function TeacherDashboard() {
       }
 
       for (const note of notes) {
+        const htmlContent = format === 'pdf'
+          ? await buildPreviewHtmlForNote(note)
+          : (note.content || '');
+
         const completed = await exportHtmlContent({
           title: getLessonNoteName(note),
-          htmlContent: note.content || '',
+          htmlContent,
           format,
           fallback: 'lesson-note',
         });
@@ -961,7 +1030,7 @@ function TeacherDashboard() {
     } finally {
       setIsBulkDownloading(false);
     }
-  }, [selectedNoteIds, lessonNotesBySelection, handleCloseBulkDownloadMenu, exportHtmlContent, getLessonNoteName, processBulkDownloadPayment]);
+  }, [selectedNoteIds, lessonNotesBySelection, handleCloseBulkDownloadMenu, exportHtmlContent, getLessonNoteName, processBulkDownloadPayment, buildPreviewHtmlForNote]);
 
   const handleDownloadViewingNote = useCallback(async (format) => {
     if (!viewingNote) return;
