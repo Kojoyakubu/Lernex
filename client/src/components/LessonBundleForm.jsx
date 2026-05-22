@@ -72,6 +72,17 @@ const buildSessionRows = (count, previous = []) => {
   });
 };
 
+function getCurrentUserId() {
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return '';
+    const user = JSON.parse(raw);
+    return String(user?._id || user?.id || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
 function LessonBundleForm({
   open,
   onClose,
@@ -83,7 +94,7 @@ function LessonBundleForm({
   defaultSchoolName = '',
   schoolCalendar,
 }) {
-  const preferenceStorageKey = 'lernex:lesson-bundle-form-prefs';
+  const preferenceStorageKey = `lernex:lesson-bundle-form-prefs-${getCurrentUserId()}`;
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [formData, setFormData] = useState({

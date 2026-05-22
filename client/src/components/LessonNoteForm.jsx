@@ -31,9 +31,29 @@ const TERM_TO_KEY = { one: 'one', two: 'two', three: 'three' };
 const SUGGESTION_MAX = 5;
 const SUGGESTION_FIELDS = ['school', 'facilitatorName', 'reference', 'contentStandardCode', 'indicatorCodes'];
 
+function getCurrentUserId() {
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return '';
+    const user = JSON.parse(raw);
+    return String(user?._id || user?.id || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
 function getSuggestionKey(classId, subjectId) {
-  if (classId && subjectId) return `lernex-fsugg-${classId}-${subjectId}`;
+  const userId = getCurrentUserId();
+  if (userId && classId && subjectId) return `lernex-fsugg-${userId}-${classId}-${subjectId}`;
   return null;
+}
+
+function getFacilitatorMemoryKey(classId, subjectId, facilitatorName) {
+  if (!classId || !subjectId || !facilitatorName) return null;
+  const userId = getCurrentUserId();
+  const normalizedFacilitator = String(facilitatorName).trim().toLowerCase();
+  if (!userId || !normalizedFacilitator) return null;
+  return `lernex-facilitator-memory-${userId}-${classId}-${subjectId}-${encodeURIComponent(normalizedFacilitator)}`;
 }
 
 function loadFieldSuggestions(classId, subjectId) {
@@ -60,6 +80,27 @@ function appendFieldSuggestions(classId, subjectId, values) {
       updated[field] = [val, ...prev.filter((v) => v !== val)].slice(0, SUGGESTION_MAX);
     });
     localStorage.setItem(key, JSON.stringify(updated));
+  } catch (_) {
+    // non-blocking
+  }
+}
+
+function loadFacilitatorMemory(classId, subjectId, facilitatorName) {
+  const key = getFacilitatorMemoryKey(classId, subjectId, facilitatorName);
+  if (!key) return null;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveFacilitatorMemory(classId, subjectId, facilitatorName, values) {
+  const key = getFacilitatorMemoryKey(classId, subjectId, facilitatorName);
+  if (!key) return;
+  try {
+    localStorage.setItem(key, JSON.stringify(values));
   } catch (_) {
     // non-blocking
   }
@@ -159,7 +200,7 @@ function LessonNoteForm({
   const [weeklyOverrides, setWeeklyOverrides] = useState({});
   const [fieldSuggestions, setFieldSuggestions] = useState({});
   const formRef = useRef(null);
-  const preferenceStorageKey = 'lessonNoteFormPrefs';
+  const preferenceStorageKey = `lessonNoteFormPrefs-${getCurrentUserId()}`;
 
   const [formData, setFormData] = useState({
     school: '',
@@ -251,28 +292,68 @@ function LessonNoteForm({
     return targets;
   }, [formData.week, formData.endWeek, generateForRange, hasCalendarWeeks, weekOptions]);
 
+  const loadSavedPreferences = () => {
+    try {
+      const raw = localStorage.getItem(preferenceStorageKey);
+      return raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      return {};
+    }
+  };
+
   useEffect(() => {
     if (open) {
+      const savedPrefs = loadSavedPreferences();
+      const initialFacilitator = defaultFacilitatorName || savedPrefs.facilitatorName || '';
+      const memory = loadFacilitatorMemory(classId, subjectId, initialFacilitator);
+      const initialSessions = memory?.sessionsPerWeek || savedPrefs.sessionsPerWeek || 1;
+
       setFieldSuggestions(loadFieldSuggestions(classId, subjectId));
       setFormData({
-        school: '',
-        facilitatorName: '',
-        term: '',
+        school: defaultSchoolName || savedPrefs.school || '',
+        facilitatorName: initialFacilitator,
+        term: memory?.term || savedPrefs.term || '',
         class: '',
-        classSize: '',
-        week: '',
-        endWeek: '',
-        contentStandardCode: '',
-        indicatorCodes: '',
-        reference: '',
-        sessionsPerWeek: 1,
-        sessionRows: buildSessionRows(1),
+        classSize: memory?.classSize || savedPrefs.classSize || '',
+        week: memory?.week || savedPrefs.week || '',
+        endWeek: memory?.endWeek || savedPrefs.endWeek || '',
+        contentStandardCode: memory?.contentStandardCode || savedPrefs.contentStandardCode || '',
+        indicatorCodes: memory?.indicatorCodes || savedPrefs.indicatorCodes || '',
+        reference: memory?.reference || savedPrefs.reference || '',
+        sessionsPerWeek: initialSessions,
+        sessionRows: memory?.sessionRows || buildSessionRows(initialSessions),
       });
       setShowAdvanced(false);
-      setGenerateForRange(false);
-      setWeeklyOverrides({});
+      setGenerateForRange(Boolean(memory?.generateForRange || savedPrefs.generateForRange));
+      setWeeklyOverrides(memory?.weeklyOverrides || {});
     }
-  }, [open, classId, subjectId]);
+  }, [open, classId, subjectId, defaultFacilitatorName, defaultSchoolName]);
+
+  useEffect(() => {
+    const facilitatorName = String(formData.facilitatorName || '').trim();
+    if (!facilitatorName || !classId || !subjectId) return;
+
+    const memory = loadFacilitatorMemory(classId, subjectId, facilitatorName);
+    if (!memory) return;
+
+    setFormData((prev) => {
+      const nextSessions = memory.sessionsPerWeek || prev.sessionsPerWeek || 1;
+      return {
+        ...prev,
+        term: memory.term || prev.term,
+        classSize: memory.classSize || prev.classSize,
+        week: memory.week || prev.week,
+        endWeek: memory.endWeek || prev.endWeek,
+        contentStandardCode: memory.contentStandardCode || prev.contentStandardCode,
+        indicatorCodes: memory.indicatorCodes || prev.indicatorCodes,
+        reference: memory.reference || prev.reference,
+        sessionsPerWeek: nextSessions,
+        sessionRows: memory.sessionRows || prev.sessionRows || buildSessionRows(nextSessions),
+      };
+    });
+    setGenerateForRange(Boolean(memory.generateForRange));
+    setWeeklyOverrides(memory.weeklyOverrides || {});
+  }, [formData.facilitatorName, classId, subjectId]);
 
   useEffect(() => {
     if (!generateForRange || weekTargets.length === 0) {
@@ -425,9 +506,23 @@ function LessonNoteForm({
           reference: formData.reference,
           sessionsPerWeek: formData.sessionsPerWeek,
           sessionRows: formData.sessionRows,
+          weeklyOverrides,
         })
       );
       appendFieldSuggestions(classId, subjectId, formData);
+      saveFacilitatorMemory(classId, subjectId, formData.facilitatorName, {
+        term: formData.term,
+        classSize: formData.classSize,
+        week: formData.week,
+        endWeek: formData.endWeek,
+        generateForRange,
+        contentStandardCode: formData.contentStandardCode,
+        indicatorCodes: formData.indicatorCodes,
+        reference: formData.reference,
+        sessionsPerWeek: formData.sessionsPerWeek,
+        sessionRows: formData.sessionRows,
+        weeklyOverrides,
+      });
     } catch (_) {
       // Non-blocking: preference storage should not stop submission.
     }
