@@ -960,19 +960,24 @@ function TeacherDashboard() {
 
     return `
       <style>
-        h1 { font-size: 1.8rem; font-weight: 700; margin: 1.25rem 0 0.75rem; }
-        h2 { font-size: 1.5rem; font-weight: 600; margin: 1rem 0 0.75rem; }
-        h3 { font-size: 1.25rem; font-weight: 600; margin: 0.85rem 0 0.5rem; }
-        p, li { line-height: 1.6; margin: 0.45rem 0; }
-        ul, ol { margin: 0.5rem 0 1rem; padding-left: 1.2rem; }
-        table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, sans-serif; color: #2E3A44; }
+        h1 { font-size: 1.4rem; font-weight: 700; margin: 0.42rem 0 0.32rem; }
+        h2 { font-size: 1.2rem; font-weight: 600; margin: 0.42rem 0 0.28rem; }
+        h3 { font-size: 1.05rem; font-weight: 600; margin: 0.32rem 0 0.2rem; }
+        table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 0.3rem 0; font-size: 0.93rem; }
+        td, th { border: 1px solid #ddd; padding: 3px 6px; vertical-align: top; white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
         th { background-color: #f5f5f5; }
-        figure { margin: 16px 0; text-align: center; }
+        p { line-height: 1.22; margin: 0.2rem 0; font-size: 0.96rem; word-break: break-word; overflow-wrap: anywhere; }
+        li { word-break: break-word; overflow-wrap: anywhere; margin-bottom: 1px; font-size: 0.96rem; line-height: 1.22; }
+        ul, ol { padding-left: 1.6rem; margin: 0.24rem 0 0.24rem 1.6rem; }
+        section { border: 1px solid #eceff3; border-radius: 0.25rem; padding: 0.4rem; margin: 0.28rem 0; }
+        figure { page-break-inside: avoid; break-inside: avoid; margin: 0.3rem 0; text-align: center; }
         img { max-width: 100%; height: auto; }
-        figcaption { margin-top: 8px; font-size: 0.92rem; color: #5f6b76; }
+        figcaption { margin-top: 0.5rem; font-size: 0.92rem; color: #5f6b76; }
+        .first-child-wrapper > :first-child { margin-top: 0 !important; padding-top: 0; }
       </style>
-      <div style="font-family: Arial, sans-serif; color: #2E3A44; line-height: 1.6; padding: 24px; box-sizing: border-box;">
+      <div class="first-child-wrapper" style="font-family: Arial, sans-serif; line-height: 1.22; padding: 0.2px; width: 920px; max-width: 920px; box-sizing: border-box; background-color: #ffffff;">
         ${contentHtml}
       </div>
     `;
