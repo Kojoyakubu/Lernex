@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+openai
+pydantic
+SQLAlchemy
+psycopg2-binary
+pymongo
+gunicorn

@@ -1,4 +1,23 @@
 services:
+  - type: web
+    name: lernex-lesson-note-service
+    env: python
+    plan: free
+    repo: .
+    branch: main
+    buildCommand: pip install -r lesson_note_service/requirements.txt
+    startCommand: gunicorn -k uvicorn.workers.UvicornWorker lesson_note_service.app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PORT
+        value: 8001
+      # Do not commit secrets here; set them in the Render dashboard or via the CLI.
+      # Example keys you'll need to set in the Render dashboard:
+      # - MONGO_URI
+      # - OPENAI_API_KEY
+      # - OPENROUTER_API_KEY
+      # - GROQ_API_KEY
+      # - ONLY_MONGO
+services:
   - type: static
     name: lernex
     rootDir: client
