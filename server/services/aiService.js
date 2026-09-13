@@ -2036,6 +2036,22 @@ function topicNeedsSimpleDiagram(topic = '', activityText = '') {
   return visualKeywords.some((key) => probe.includes(key));
 }
 
+function buildSimpleDiagramSvg(topic = '') {
+  const label = String(topic || 'lesson concept')
+    .replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]))
+    .slice(0, 42);
+
+  return `<svg class="lesson-diagram" width="260" height="150" viewBox="0 0 260 150" role="img" aria-label="Simple diagram for ${label}">
+  <rect x="10" y="10" width="240" height="130" fill="none" stroke="#1f2937" stroke-width="2" />
+  <line x1="30" y1="112" x2="230" y2="112" stroke="#1f2937" stroke-width="2" />
+  <circle cx="70" cy="76" r="22" fill="none" stroke="#1f2937" stroke-width="2" />
+  <line x1="92" y1="76" x2="156" y2="76" stroke="#1f2937" stroke-width="2" />
+  <polygon points="156,76 145,70 145,82" fill="#1f2937" />
+  <rect x="166" y="54" width="52" height="44" fill="none" stroke="#1f2937" stroke-width="2" />
+  <text x="130" y="132" text-anchor="middle" font-size="11" fill="#1f2937">${label}</text>
+</svg>`;
+}
+
 function ensurePhase2ActivitiesReadable(html = '', { subjectName = '', topic = '' } = {}) {
   const source = String(html || '');
   const allowDiagram = shouldUseDiagramSupport(subjectName);
@@ -2073,9 +2089,9 @@ function ensurePhase2ActivitiesReadable(html = '', { subjectName = '', topic = '
           .join('<br>');
       }
 
-      const hasDiagram = /simple diagram\s*:/i.test(stripTags(rebuiltBody));
+      const hasDiagram = /<svg\b/i.test(rebuiltBody);
       if (allowDiagram && !hasDiagram && topicNeedsSimpleDiagram(topic, bodyText)) {
-        const diagramLine = `<br><strong>Simple Diagram:</strong> Quick board sketch with Ghanaian context (e.g., market, transport, home, or school setting), clearly labeled for learners to copy.`;
+        const diagramLine = `<br><strong>Simple Diagram:</strong>${buildSimpleDiagramSvg(topic)}`;
         rebuiltBody = `${rebuiltBody}${diagramLine}`;
       }
 
@@ -2208,7 +2224,7 @@ LESSON PHASE GOOD vs BAD EXAMPLES (use as a quality standard for this lesson):
 18. Differentiation: name the EXACT support or extension (e.g., "provide a pre-filled place value chart" or "challenge: write a 4-digit number and decompose it").
 19. Assessment-for-Learning checkpoint must describe what the teacher observes or listens for (not "check for understanding").
 20. Keep Phase 2 Activity 1 and Activity 2 as short readable action lines (3-5 lines), not one continuous paragraph. Separate lines with <br> and you may number them.
-21. For Mathematics, Creative Arts, Career Technology, and related practical subjects, include "Simple Diagram:" only when the concept is visual/spatial/process-based. Keep it easy to draw on a classroom board.
+21. For Mathematics, Creative Arts, Career Technology, and related practical subjects, include a small diagram only when the concept is visual/spatial/process-based. Draw it as compact inline SVG directly inside the relevant phase cell using only <svg>, <line>, <rect>, <circle>, <path>, <polygon>, and <text>. Use a viewBox, width="260", height="150", a short accessible aria-label, simple black strokes, and at most 8 shapes plus short labels. Do not use external images, base64 data, scripts, animation, or a textual placeholder such as "[Box A: ...]". Keep it easy for a teacher to copy on a classroom board.
 22. Keep examples and classroom context Ghanaian: use local names, places, materials, and everyday Ghana settings where appropriate.
 
 LESSON PHASE STRUCTURE RUBRIC:
