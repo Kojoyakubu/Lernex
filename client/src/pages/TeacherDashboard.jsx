@@ -241,6 +241,7 @@ function TeacherDashboard() {
   // Local state
   const [selections, setSelections] = useState(INITIAL_SELECTIONS);
   const [noteToDelete, setNoteToDelete] = useState(null);
+  const [noteToRegenerate, setNoteToRegenerate] = useState(null);
   const [viewingNote, setViewingNote] = useState(null);
   const [previewSegments, setPreviewSegments] = useState([]);
   const [selectedLessonForLearner, setSelectedLessonForLearner] = useState('');
@@ -1282,6 +1283,7 @@ function TeacherDashboard() {
         setSnackbar({ open: true, message: successMessage, severity });
         displayNote(createdNotes[createdNotes.length - 1]);
         closeDialog();
+        setNoteToRegenerate(null);
         setShowCreateTools(false);
         setLessonPlanSelectedSubStrands([]);
       } catch (_err) {
@@ -1430,6 +1432,24 @@ function TeacherDashboard() {
     setActiveDialog('noteForm');
   }, [lessonPlanSelectedSubStrands.length, closeDialog]);
 
+  const handleRegenerateLessonNote = useCallback((note) => {
+    const subStrand = note?.subStrand;
+    const topic = {
+      id: subStrand?._id || subStrand,
+      name: subStrand?.name || 'Topic',
+      strandName: subStrand?.strand?.name || '',
+    };
+
+    if (!topic.id) {
+      setSnackbar({ open: true, message: 'This note is missing its curriculum topic.', severity: 'error' });
+      return;
+    }
+
+    setNoteToRegenerate(note);
+    setLessonPlanSelectedSubStrands([topic]);
+    setActiveDialog('noteForm');
+  }, []);
+
   const handlePublishBundle = useCallback((bundle) => {
     if (bundle.learnerNote?.id) {
       dispatch(publishLearnerNote(bundle.learnerNote.id));
@@ -1535,6 +1555,7 @@ function TeacherDashboard() {
       imageUrl: 'https://static.vecteezy.com/system/resources/previews/027/685/568/original/teacher-lesson-icon-flat-vector.jpg',
       onClick: () => {
         resetSelections();
+        setNoteToRegenerate(null);
         setLessonPlanSelectedSubStrands([]);
         setActiveDialog('plan');
       },
@@ -2074,6 +2095,13 @@ function TeacherDashboard() {
                               >
                                 Delete
                               </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => handleRegenerateLessonNote(note)}
+                              >
+                                Regenerate
+                              </Button>
                             </Stack>
                           </Box>
                         </Paper>
@@ -2602,7 +2630,11 @@ function TeacherDashboard() {
 
         <LessonNoteForm
           open={activeDialog === 'noteForm'}
-          onClose={() => closeDialog()}
+          onClose={() => {
+            closeDialog();
+            setNoteToRegenerate(null);
+            setLessonPlanSelectedSubStrands([]);
+          }}
           onSubmit={handleGenerateNoteSubmit}
           subStrandName={lessonPlanSelectedSubStrands[0]?.name || subStrands.find((s) => s._id === selections.subStrand)?.name || ''}
           selectedTopicNames={lessonPlanSelectedSubStrands.map((topic) => topic.name)}
@@ -2625,6 +2657,17 @@ function TeacherDashboard() {
           subjectId={selections.subject}
           fullScreen={isDialogFullscreen('lessonNoteForm')}
           onToggleFullscreen={() => toggleDialogFullscreen('lessonNoteForm')}
+          initialData={noteToRegenerate ? {
+            facilitatorName: noteToRegenerate.generationContext?.facilitatorName || '',
+            term: noteToRegenerate.generationContext?.term || '',
+            week: noteToRegenerate.generationContext?.week || '',
+            classSize: noteToRegenerate.generationContext?.classSize || '',
+            contentStandardCode: noteToRegenerate.generationContext?.contentStandardCode || '',
+            indicatorCodes: noteToRegenerate.generationContext?.indicatorCodes || '',
+            reference: noteToRegenerate.generationContext?.reference || '',
+            sessionsPerWeek: noteToRegenerate.generationContext?.sessionsPerWeek || 1,
+          } : null}
+          isRegenerating={Boolean(noteToRegenerate)}
         />
         <BundleResultViewer
           open={activeDialog === 'bundleResult'}

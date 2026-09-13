@@ -197,6 +197,8 @@ function LessonNoteForm({
   onToggleFullscreen,
   classId,
   subjectId,
+  initialData = null,
+  isRegenerating = false,
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [generateForRange, setGenerateForRange] = useState(false);
@@ -307,30 +309,31 @@ function LessonNoteForm({
   useEffect(() => {
     if (open) {
       const savedPrefs = loadSavedPreferences();
-      const initialFacilitator = defaultFacilitatorName || savedPrefs.facilitatorName || '';
+      const prefilled = initialData || {};
+      const initialFacilitator = prefilled.facilitatorName || defaultFacilitatorName || savedPrefs.facilitatorName || '';
       const memory = loadFacilitatorMemory(classId, subjectId, initialFacilitator);
-      const initialSessions = memory?.sessionsPerWeek || savedPrefs.sessionsPerWeek || 1;
+      const initialSessions = prefilled.sessionsPerWeek || memory?.sessionsPerWeek || savedPrefs.sessionsPerWeek || 1;
 
       setFieldSuggestions(loadFieldSuggestions(classId, subjectId, initialFacilitator));
       setFormData({
-        school: defaultSchoolName || savedPrefs.school || '',
+        school: prefilled.school ?? defaultSchoolName ?? savedPrefs.school ?? '',
         facilitatorName: initialFacilitator,
-        term: memory?.term || savedPrefs.term || '',
+        term: prefilled.term ?? memory?.term ?? savedPrefs.term ?? '',
         class: '',
-        classSize: memory?.classSize || savedPrefs.classSize || '',
-        week: memory?.week || savedPrefs.week || '',
-        endWeek: memory?.endWeek || savedPrefs.endWeek || '',
-        contentStandardCode: memory?.contentStandardCode || savedPrefs.contentStandardCode || '',
-        indicatorCodes: memory?.indicatorCodes || savedPrefs.indicatorCodes || '',
-        reference: memory?.reference || savedPrefs.reference || '',
+        classSize: prefilled.classSize ?? memory?.classSize ?? savedPrefs.classSize ?? '',
+        week: prefilled.week ?? memory?.week ?? savedPrefs.week ?? '',
+        endWeek: prefilled.endWeek ?? memory?.endWeek ?? savedPrefs.endWeek ?? '',
+        contentStandardCode: prefilled.contentStandardCode ?? memory?.contentStandardCode ?? savedPrefs.contentStandardCode ?? '',
+        indicatorCodes: prefilled.indicatorCodes ?? memory?.indicatorCodes ?? savedPrefs.indicatorCodes ?? '',
+        reference: prefilled.reference ?? memory?.reference ?? savedPrefs.reference ?? '',
         sessionsPerWeek: initialSessions,
-        sessionRows: memory?.sessionRows || buildSessionRows(initialSessions),
+        sessionRows: prefilled.sessionRows || memory?.sessionRows || buildSessionRows(initialSessions),
       });
       setShowAdvanced(false);
-      setGenerateForRange(Boolean(memory?.generateForRange || savedPrefs.generateForRange));
-      setWeeklyOverrides(memory?.weeklyOverrides || {});
+      setGenerateForRange(Boolean(prefilled.generateForRange ?? memory?.generateForRange ?? savedPrefs.generateForRange));
+      setWeeklyOverrides(prefilled.weeklyOverrides || memory?.weeklyOverrides || {});
     }
-  }, [open, classId, subjectId, defaultFacilitatorName, defaultSchoolName]);
+  }, [open, classId, subjectId, defaultFacilitatorName, defaultSchoolName, initialData]);
 
   useEffect(() => {
     const facilitatorName = String(formData.facilitatorName || '').trim();
@@ -563,7 +566,7 @@ function LessonNoteForm({
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Article color="primary" />
-            <Typography variant="h6">Generate AI Lesson Note</Typography>
+            <Typography variant="h6">{isRegenerating ? 'Regenerate AI Lesson Note' : 'Generate AI Lesson Note'}</Typography>
           </Box>
           {onToggleFullscreen && (
             <Tooltip title={fullScreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
@@ -578,7 +581,9 @@ function LessonNoteForm({
           )}
         </Box>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          Select one week or a week range and lesson day(s). Dates are auto-derived from your school term calendar.
+          {isRegenerating
+            ? 'Review the saved details, make any adjustments, and generate a new lesson note.'
+            : 'Select one week or a week range and lesson day(s). Dates are auto-derived from your school term calendar.'}
         </Typography>
       </DialogTitle>
 
