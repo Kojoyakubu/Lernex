@@ -55,8 +55,8 @@ const groq = hasGroq ? new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: '
 const openrouter = hasOpenRouter ? new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: 'https://openrouter.ai/api/v1' }) : null;
 
 // ---- Default Model Choices (override via env if you like) ----
-const GEMINI_MAIN = process.env.GEMINI_MODEL_MAIN || 'gemini-2.5-flash-lite';
-const GEMINI_FAST = process.env.GEMINI_MODEL_FAST || 'gemini-2.5-flash-lite';
+const GEMINI_MAIN = process.env.GEMINI_MODEL_MAIN || 'gemini-3.6-flash';
+const GEMINI_FAST = process.env.GEMINI_MODEL_FAST || 'gemini-3.5-flash-lite';
 const OPENAI_MAIN = process.env.OPENAI_MODEL_MAIN || 'gpt-4o';
 const OPENAI_JSON = process.env.OPENAI_MODEL_JSON || 'gpt-4o-mini';
 const CLAUDE_MAIN = process.env.CLAUDE_MODEL_MAIN || 'claude-3-5-sonnet-20240620';
@@ -330,7 +330,8 @@ async function generateTextCore({
   // Define fallback models for Gemini
   const geminiModels = [
     providerModelOverride || (jsonNeeded || /quiz/i.test(task) ? GEMINI_FAST : GEMINI_MAIN),
-    GEMINI_FAST,
+    jsonNeeded || /quiz/i.test(task) ? GEMINI_MAIN : GEMINI_FAST,
+    'gemini-2.5-flash-lite',
     'gemini-2.5-flash',
   ];
   const uniqueGeminiModels = [...new Set(geminiModels)];
