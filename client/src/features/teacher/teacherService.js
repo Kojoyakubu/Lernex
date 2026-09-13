@@ -69,6 +69,11 @@ const deleteLessonNote = async (noteId) => {
   return response.data;
 };
 
+const deleteLessonNotes = async (noteIds) => {
+  const response = await api.delete('/api/teacher/lesson-notes', { data: { ids: noteIds } });
+  return response.data;
+};
+
 // ✅ FIX: Changed from /generate-learner-note to /ai/generate-learner-note
 const generateLearnerNote = async (lessonNoteId) => {
   return postWith503Retry('/api/teacher/ai/generate-learner-note', { lessonNoteId }, {
@@ -214,6 +219,7 @@ const teacherService = {
   generateLessonNote,
   getLessonNoteById,
   deleteLessonNote,
+  deleteLessonNotes,
   generateLearnerNote,
   generateLearnerNoteFromStrand,
   getTeacherAnalytics,

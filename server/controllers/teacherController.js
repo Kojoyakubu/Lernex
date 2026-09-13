@@ -246,6 +246,33 @@ const deleteLessonNote = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Delete multiple lesson notes
+ * @route   DELETE /api/teacher/lesson-notes
+ * @access  Private (Teacher)
+ */
+const deleteLessonNotes = asyncHandler(async (req, res) => {
+  const noteIds = Array.isArray(req.body?.ids)
+    ? [...new Set(req.body.ids.map((id) => String(id || '').trim()).filter(Boolean))]
+    : [];
+
+  if (noteIds.length === 0 || noteIds.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+    res.status(400);
+    throw new Error('At least one valid lesson note ID is required.');
+  }
+
+  const result = await LessonNote.deleteMany({
+    _id: { $in: noteIds },
+    teacher: req.user.id,
+  });
+
+  res.status(200).json({
+    ids: noteIds,
+    deletedCount: result.deletedCount || 0,
+    message: `${result.deletedCount || 0} lesson note(s) deleted`,
+  });
+});
+
+/**
  * @desc    Generate a learner's version of a lesson note
  * @route   POST /api/teacher/generate-learner-note
  * @access  Private (Teacher)
@@ -1144,6 +1171,7 @@ module.exports = {
   getMyLessonNotes,
   getLessonNoteById,
   deleteLessonNote,
+  deleteLessonNotes,
   generateLearnerNote,
   generateLearnerNoteFromStrand,
   getMySchoolCalendar,

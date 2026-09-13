@@ -12,6 +12,7 @@ import {
   generateLessonNote,
   getMyLessonNotes,
   deleteLessonNote,
+  deleteLessonNotes,
   generateLearnerNote,
   generateLearnerNoteFromStrand,
   getDraftLearnerNotes,
@@ -87,6 +88,7 @@ import {
   Quiz,
   School,
   Download,
+  DeleteOutline,
   ExpandMore,
   OpenInFull,
   CloseFullscreen,
@@ -1041,6 +1043,32 @@ function TeacherDashboard() {
     }
   }, [selectedNoteIds, lessonNotesBySelection, handleCloseBulkDownloadMenu, exportHtmlContent, getLessonNoteName, processBulkDownloadPayment, buildPreviewHtmlForNote]);
 
+  const handleBulkDelete = useCallback(async () => {
+    if (!selectedNoteIds.size) return;
+
+    const selectedCount = selectedNoteIds.size;
+    const confirmed = window.confirm(
+      `Delete ${selectedCount} selected lesson note${selectedCount > 1 ? 's' : ''}? This action is irreversible.`
+    );
+    if (!confirmed) return;
+
+    const result = await dispatch(deleteLessonNotes([...selectedNoteIds]));
+    if (!result.error) {
+      setSelectedNoteIds(new Set());
+      setSnackbar({
+        open: true,
+        message: result.payload?.message || `${selectedCount} lesson note(s) deleted`,
+        severity: 'success',
+      });
+    } else {
+      setSnackbar({
+        open: true,
+        message: result.payload || 'Unable to delete selected lesson notes.',
+        severity: 'error',
+      });
+    }
+  }, [dispatch, selectedNoteIds]);
+
   const handleDownloadViewingNote = useCallback(async (format) => {
     if (!viewingNote) return;
 
@@ -1961,6 +1989,16 @@ function TeacherDashboard() {
                   </Box>
                   {selectedNoteIds.size > 0 && (
                     <>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        disabled={isBulkDownloading || isChargingDownload}
+                        onClick={handleBulkDelete}
+                        startIcon={<DeleteOutline />}
+                      >
+                        Delete selected
+                      </Button>
                       <Button
                         variant="contained"
                         size="small"

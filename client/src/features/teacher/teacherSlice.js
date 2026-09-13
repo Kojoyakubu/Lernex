@@ -36,6 +36,7 @@ export const getMyLessonNotes = createTeacherThunk('getMyLessonNotes', teacherSe
 export const generateLessonNote = createTeacherThunk('generateLessonNote', teacherService.generateLessonNote);
 export const getLessonNoteById = createTeacherThunk('getLessonNoteById', teacherService.getLessonNoteById);
 export const deleteLessonNote = createTeacherThunk('deleteLessonNote', teacherService.deleteLessonNote);
+export const deleteLessonNotes = createTeacherThunk('deleteLessonNotes', teacherService.deleteLessonNotes);
 export const generateLearnerNote = createTeacherThunk('generateLearnerNote', teacherService.generateLearnerNote);
 export const generateLearnerNoteFromStrand = createTeacherThunk('generateLearnerNoteFromStrand', teacherService.generateLearnerNoteFromStrand);
 export const getTeacherAnalytics = createTeacherThunk('getTeacherAnalytics', teacherService.getTeacherAnalytics);
@@ -95,6 +96,12 @@ export const teacherSlice = createSlice({
         state.lessonNotes = state.lessonNotes.filter(
           (note) => note._id !== action.payload.id
         );
+        state.isSuccess = true;
+        state.message = action.payload.message;
+      })
+      .addCase(deleteLessonNotes.fulfilled, (state, action) => {
+        const deletedIds = new Set(action.payload.ids || []);
+        state.lessonNotes = state.lessonNotes.filter((note) => !deletedIds.has(note._id));
         state.isSuccess = true;
         state.message = action.payload.message;
       })

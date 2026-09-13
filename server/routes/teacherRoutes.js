@@ -7,6 +7,7 @@ const {
   getMyLessonNotes,
   getLessonNoteById,
   deleteLessonNote,
+  deleteLessonNotes,
   generateLearnerNote,
   generateLearnerNoteFromStrand,
   getMySchoolCalendar,
@@ -30,6 +31,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 // --- Lesson Notes ---
 router.post('/ai/generate-note', protect, authorize('teacher'), generateLessonNote);
 router.get('/lesson-notes', protect, authorize('teacher'), getMyLessonNotes);
+router.delete('/lesson-notes', protect, authorize('teacher'), deleteLessonNotes);
 router.get('/lesson-notes/:id', protect, authorize('teacher', 'admin', 'school_admin'), getLessonNoteById);
 router.delete('/lesson-notes/:id', protect, authorize('teacher'), deleteLessonNote);
 
