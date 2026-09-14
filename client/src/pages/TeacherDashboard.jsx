@@ -878,7 +878,40 @@ function TeacherDashboard() {
         link.remove();
         URL.revokeObjectURL(url);
       } else {
-        const htmlDocument = `<!doctype html><html><head><meta charset="utf-8" /><title>${baseName}</title></head><body>${htmlContent}</body></html>`;
+        let wordContent = htmlContent;
+        let wordStyles = '';
+
+        if (format === 'doc') {
+          const wordRoot = document.createElement('div');
+          wordRoot.innerHTML = htmlContent;
+          wordRoot.classList.add('word-export');
+
+          wordRoot.querySelectorAll('.lesson-phases .phase-table thead').forEach((thead) => {
+            const body = document.createElement('tbody');
+            while (thead.firstChild) body.appendChild(thead.firstChild);
+            thead.replaceWith(body);
+          });
+
+          wordContent = wordRoot.innerHTML;
+          wordStyles = `
+            @page { size: A4; margin: 0.45in; }
+            html, body { margin: 0; padding: 0; }
+            body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.25; }
+            .word-export, .word-export * {
+              font-family: Arial, sans-serif !important;
+              font-size: 10pt !important;
+              line-height: 1.25 !important;
+            }
+            .word-export h1, .word-export h2, .word-export h3,
+            .word-export h4, .word-export strong { font-size: 11pt !important; }
+            .word-export { margin: 0 !important; padding: 0 !important; }
+            .word-export table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+            .word-export tr { page-break-inside: avoid; }
+            .word-export th, .word-export td { padding: 2pt 3pt !important; }
+          `;
+        }
+
+        const htmlDocument = `<!doctype html><html><head><meta charset="utf-8" /><title>${baseName}</title><style>${wordStyles}</style></head><body>${wordContent}</body></html>`;
         const blobType = format === 'doc' ? 'application/msword;charset=utf-8' : 'text/html;charset=utf-8';
         const extension = format === 'doc' ? 'doc' : 'html';
         const blob = new Blob([htmlDocument], { type: blobType });
