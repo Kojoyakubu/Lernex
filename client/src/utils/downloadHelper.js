@@ -40,6 +40,46 @@ const triggerDownload = (blob, fileName) => {
   }, 0);
 };
 
+export const convertSvgElementsToImages = async (root) => {
+  const svgElements = [...root.querySelectorAll('svg')];
+  await Promise.all(svgElements.map(async (svg) => {
+    const serializedSvg = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([serializedSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    try {
+      const image = new Image();
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = svgUrl;
+      });
+
+      const viewBox = svg.viewBox?.baseVal;
+      const width = Number(svg.getAttribute('width')) || viewBox?.width || 260;
+      const height = Number(svg.getAttribute('height')) || viewBox?.height || 150;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width));
+      canvas.height = Math.max(1, Math.round(height));
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const imageElement = document.createElement('img');
+      imageElement.src = canvas.toDataURL('image/png');
+      imageElement.alt = svg.getAttribute('aria-label') || 'Lesson diagram';
+      imageElement.width = canvas.width;
+      imageElement.height = canvas.height;
+      imageElement.style.maxWidth = '100%';
+      imageElement.style.height = 'auto';
+      svg.replaceWith(imageElement);
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
+  }));
+};
+
 export const downloadAsPdf = async (elementId, topic, options = {}) => {
   const element = document.getElementById(elementId);
   if (!element) return null;
@@ -134,6 +174,7 @@ export const downloadAsWord = async (elementId, topic) => {
 
   const exportRoot = element.cloneNode(true);
   exportRoot.classList.add('word-export');
+  await convertSvgElementsToImages(exportRoot);
 
   // Word treats table header rows as repeating print headers. Keep the lesson
   // phase labels as a normal row so they appear once instead of on every page.

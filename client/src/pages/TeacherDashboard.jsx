@@ -33,7 +33,7 @@ import {
 import { segmentHtmlWithImages, removeImageBlocks } from '../utils/imageExtractor';
 import { fetchImageForQuery } from '../services/imageService';
 import DOMPurify from 'dompurify';
-import { downloadAsPdf } from '../utils/downloadHelper';
+import { downloadAsPdf, convertSvgElementsToImages } from '../utils/downloadHelper';
 import teacherService from '../features/teacher/teacherService';
 import LessonBundleForm from '../components/LessonBundleForm'; 
 import BundleResultViewer from '../components/BundleResultViewer';
@@ -891,6 +891,8 @@ function TeacherDashboard() {
             while (thead.firstChild) body.appendChild(thead.firstChild);
             thead.replaceWith(body);
           });
+
+          await convertSvgElementsToImages(wordRoot);
 
           wordRoot.querySelectorAll('.lesson-phases .phase-table').forEach((table) => {
             const colgroup = document.createElement('colgroup');
