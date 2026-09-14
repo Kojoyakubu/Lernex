@@ -143,6 +143,16 @@ export const downloadAsWord = async (elementId, topic) => {
     thead.replaceWith(body);
   });
 
+  exportRoot.querySelectorAll('.lesson-phases .phase-table').forEach((table) => {
+    const colgroup = document.createElement('colgroup');
+    ['25%', '50%', '25%'].forEach((width) => {
+      const col = document.createElement('col');
+      col.style.width = width;
+      colgroup.appendChild(col);
+    });
+    table.insertBefore(colgroup, table.firstChild);
+  });
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -183,13 +193,22 @@ export const downloadAsWord = async (elementId, topic) => {
             width: 100%;
             border-collapse: collapse;
             page-break-inside: auto;
+            table-layout: fixed;
           }
+          .word-export .phase-table col:nth-child(1) { width: 25% !important; }
+          .word-export .phase-table col:nth-child(2) { width: 50% !important; }
+          .word-export .phase-table col:nth-child(3) { width: 25% !important; }
           tr { page-break-inside: avoid; }
           th, td {
             border: 1px solid #000;
             padding: 2pt 3pt;
             vertical-align: top;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
           }
+          .word-export .katex-display { max-width: 100%; overflow-wrap: anywhere; white-space: normal; font-size: 0.85em !important; }
+          .word-export svg { max-width: 100%; height: auto; }
           img {
             max-width: 100%;
             height: auto;

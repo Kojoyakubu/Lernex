@@ -892,6 +892,16 @@ function TeacherDashboard() {
             thead.replaceWith(body);
           });
 
+          wordRoot.querySelectorAll('.lesson-phases .phase-table').forEach((table) => {
+            const colgroup = document.createElement('colgroup');
+            ['25%', '50%', '25%'].forEach((width) => {
+              const col = document.createElement('col');
+              col.style.width = width;
+              colgroup.appendChild(col);
+            });
+            table.insertBefore(colgroup, table.firstChild);
+          });
+
           wordContent = wordRoot.innerHTML;
           wordStyles = `
             @page { size: A4; margin: 0.45in; }
@@ -905,9 +915,14 @@ function TeacherDashboard() {
             .word-export h1, .word-export h2, .word-export h3,
             .word-export h4, .word-export strong { font-size: 11pt !important; }
             .word-export { margin: 0 !important; padding: 0 !important; }
-            .word-export table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+            .word-export table { width: 100% !important; border-collapse: collapse; page-break-inside: auto; table-layout: fixed; }
+            .word-export .phase-table col:nth-child(1) { width: 25% !important; }
+            .word-export .phase-table col:nth-child(2) { width: 50% !important; }
+            .word-export .phase-table col:nth-child(3) { width: 25% !important; }
             .word-export tr { page-break-inside: avoid; }
-            .word-export th, .word-export td { padding: 2pt 3pt !important; }
+            .word-export th, .word-export td { padding: 2pt 3pt !important; min-width: 0 !important; overflow-wrap: anywhere; word-break: break-word; }
+            .word-export .katex-display { max-width: 100%; overflow-wrap: anywhere; white-space: normal; font-size: 0.85em !important; }
+            .word-export svg { max-width: 100%; height: auto; }
           `;
         }
 
@@ -1009,7 +1024,8 @@ function TeacherDashboard() {
         ul, ol { padding-left: 1.4rem; margin: 0.18rem 0 0.18rem 1.4rem; }
         section { border: 1px solid #eceff3; border-radius: 0.2rem; padding: 0.28rem; margin: 0.2rem 0; }
         figure { page-break-inside: avoid; break-inside: avoid; margin: 0.2rem 0; text-align: center; }
-        img { max-width: 100%; height: auto; }
+        img, svg { max-width: 100%; height: auto; }
+        .katex-display { max-width: 100%; overflow: hidden; white-space: normal; font-size: 0.85em; }
         figcaption { margin-top: 0.35rem; font-size: 0.9rem; color: #5f6b76; }
         .first-child-wrapper > :first-child { margin-top: 0 !important; padding-top: 0; }
       </style>
