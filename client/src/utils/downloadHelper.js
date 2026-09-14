@@ -132,23 +132,62 @@ export const downloadAsWord = async (elementId, topic) => {
   const element = document.getElementById(elementId);
   if (!element) return null;
 
+  const exportRoot = element.cloneNode(true);
+  exportRoot.classList.add('word-export');
+
+  // Word treats table header rows as repeating print headers. Keep the lesson
+  // phase labels as a normal row so they appear once instead of on every page.
+  exportRoot.querySelectorAll('.lesson-phases .phase-table thead').forEach((thead) => {
+    const body = document.createElement('tbody');
+    while (thead.firstChild) body.appendChild(thead.firstChild);
+    thead.replaceWith(body);
+  });
+
   const html = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="UTF-8" />
         <style>
+          @page {
+            size: A4;
+            margin: 0.45in;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+          }
           body {
             font-family: Arial, sans-serif;
-            font-size: 12pt;
+            font-size: 10pt;
+            line-height: 1.25;
+          }
+          .word-export,
+          .word-export * {
+            font-family: Arial, sans-serif !important;
+            font-size: 10pt !important;
+            line-height: 1.25 !important;
+          }
+          .word-export h1,
+          .word-export h2,
+          .word-export h3,
+          .word-export h4,
+          .word-export strong {
+            font-size: 11pt !important;
+          }
+          .word-export {
+            margin: 0;
+            padding: 0;
           }
           table {
             width: 100%;
             border-collapse: collapse;
+            page-break-inside: auto;
           }
+          tr { page-break-inside: avoid; }
           th, td {
             border: 1px solid #000;
-            padding: 4pt;
+            padding: 2pt 3pt;
             vertical-align: top;
           }
           img {
@@ -158,7 +197,7 @@ export const downloadAsWord = async (elementId, topic) => {
         </style>
       </head>
       <body>
-        ${element.innerHTML}
+        ${exportRoot.outerHTML}
       </body>
     </html>
   `;
