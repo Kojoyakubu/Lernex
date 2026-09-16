@@ -63,12 +63,16 @@ const LessonNoteView = () => {
         currentNote?.title ||
         currentNote?.subStrand?.name ||
         'lesson_note';
+      const className = currentNote?.subStrand?.strand?.subject?.class?.name || '';
+      const subjectName = currentNote?.subStrand?.strand?.subject?.name || '';
+      const week = currentNote?.generationContext?.week ? `Week ${currentNote.generationContext.week}` : '';
+      const fileName = [className, subjectName, week].filter(Boolean).join(' - ') || topic;
 
       /* ✅ MODIFIED: PDF now uses PDF-only view */
       if (type === 'pdf') {
-        downloadAsPdf(pdfElementId, topic, {});
+        downloadAsPdf(pdfElementId, fileName, {});
       }
-      if (type === 'word') downloadAsWord(elementId, topic);
+      if (type === 'word') downloadAsWord(elementId, fileName);
     },
     [currentNote, elementId, pdfElementId]
   );

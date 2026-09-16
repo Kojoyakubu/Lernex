@@ -629,9 +629,10 @@ function TeacherDashboard() {
   ), []);
 
   const getLessonNoteName = useCallback((note) => {
+    const classPart = note?.subStrand?.strand?.subject?.class?.name || '';
     const subjectPart = note?.subStrand?.strand?.subject?.name || '';
     const weekPart = note?.generationContext?.week ? `Week ${note.generationContext.week}` : '';
-    const nameParts = [subjectPart, weekPart].filter(Boolean);
+    const nameParts = [classPart, subjectPart, weekPart].filter(Boolean);
     return nameParts.length > 0 ? nameParts.join(' - ') : (note?.subStrand?.name || 'lesson-note');
   }, []);
 

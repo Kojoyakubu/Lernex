@@ -23,6 +23,13 @@ services:
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
+    envVars:
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_APP_URL
+        value: https://lernex.onrender.com
+      - key: VITE_API_URL
+        value: https://scholars-path-backend.onrender.com
     routes:
       - type: rewrite
         source: /*

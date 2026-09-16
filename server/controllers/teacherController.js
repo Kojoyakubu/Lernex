@@ -208,7 +208,19 @@ const getMyLessonNotes = asyncHandler(async (req, res) => {
  * @access  Private (Teacher)
  */
 const getLessonNoteById = asyncHandler(async (req, res) => {
-  const note = await LessonNote.findById(req.params.id);
+  const note = await LessonNote.findById(req.params.id).populate({
+    path: 'subStrand',
+    select: 'name',
+    populate: {
+      path: 'strand',
+      select: 'name',
+      populate: {
+        path: 'subject',
+        select: 'name',
+        populate: { path: 'class', select: 'name' },
+      },
+    },
+  });
 
   if (!note) {
     res.status(404);
