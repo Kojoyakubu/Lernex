@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Scheme = require('../models/schemeModel');
+const Strand = require('../models/strandModel');
 const SubStrand = require('../models/subStrandModel');
 const School = require('../models/schoolModel');
 const User = require('../models/userModel');
@@ -57,6 +58,23 @@ function mondayFromWeekEnding(weekEnding) {
   return date.toISOString().slice(0, 10);
 }
 
+function parseSchedule(requestText) {
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    .filter((day) => new RegExp(`\\b${day}\\b`, 'i').test(requestText));
+  const durationMatch = String(requestText).match(/duration\s*(?:of|is)?\s*(\d+(?:\.\d+)?)\s*(minutes?|mins?|hours?|hrs?)/i);
+  const duration = durationMatch ? `${durationMatch[1]} ${durationMatch[2]}` : '';
+  return { days, duration };
+}
+
+function dateForDay(weekEnding, dayName) {
+  const monday = mondayFromWeekEnding(weekEnding);
+  if (!monday || !dayName) return monday;
+  const date = new Date(`${monday}T00:00:00`);
+  const offsets = { Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3, Friday: 4, Saturday: 5, Sunday: 6 };
+  date.setDate(date.getDate() + (offsets[dayName] ?? 0));
+  return date.toISOString().slice(0, 10);
+}
+
 async function loadTeacherContext(teacherId) {
   const teacher = await User.findById(teacherId).select('fullName school').lean();
   if (!teacher) throw new Error('Teacher profile could not be found.');
@@ -108,7 +126,52 @@ async function resolveSubStrand({ scheme, entry }) {
   ));
   if (matching.length === 1) return matching[0];
   if (matching.length > 1) throw new Error(`More than one curriculum topic matches "${entry.subStrand}".`);
-  throw new Error(`The scheme topic "${entry.subStrand}" is not mapped to the existing curriculum.`);
+
+  // The confirmed scheme is the source of truth. Create only the exact missing
+  // hierarchy labels from the scheme; never ask AI to invent curriculum data.
+  if (!entry.strand || !entry.subStrand) {
+    throw new Error(`The scheme topic for this week is incomplete and needs review.`);
+  }
+
+  let strand = await Strand.findOne({
+    subject: scheme.subject._id,
+    name: new RegExp(`^${escapeRegex(entry.strand)}$`, 'i'),
+  });
+  if (!strand) {
+    try {
+      strand = await Strand.create({ subject: scheme.subject._id, name: entry.strand });
+    } catch (error) {
+      if (error.code !== 11000) throw error;
+      strand = await Strand.findOne({
+        subject: scheme.subject._id,
+        name: new RegExp(`^${escapeRegex(entry.strand)}$`, 'i'),
+      });
+    }
+  }
+
+  if (!strand) throw new Error(`The scheme strand "${entry.strand}" could not be linked.`);
+
+  let createdSubStrand = await SubStrand.findOne({
+    strand: strand._id,
+    name: new RegExp(`^${escapeRegex(entry.subStrand)}$`, 'i'),
+  });
+  if (!createdSubStrand) {
+    try {
+      createdSubStrand = await SubStrand.create({ strand: strand._id, name: entry.subStrand });
+    } catch (error) {
+      if (error.code !== 11000) throw error;
+      createdSubStrand = await SubStrand.findOne({
+        strand: strand._id,
+        name: new RegExp(`^${escapeRegex(entry.subStrand)}$`, 'i'),
+      });
+    }
+  }
+
+  if (!createdSubStrand) throw new Error(`The scheme topic "${entry.subStrand}" could not be linked.`);
+  return SubStrand.findById(createdSubStrand._id).populate({
+    path: 'strand',
+    populate: { path: 'subject', populate: { path: 'class' } },
+  });
 }
 
 async function resolveWeeks({ scheme, requestText, weeks }) {
@@ -132,6 +195,7 @@ async function generateFromRequest({ teacherId, requestText, classId, subjectId,
   if (!weeks.length) throw new Error('No missing lessons remain for that scheme.');
 
   const shouldRegenerate = isRegenerationRequest(requestText, regenerate);
+  const schedule = parseSchedule(requestText);
   const results = [];
   for (const week of weeks) {
     const entry = scheme.entries.find((item) => item.weeks.includes(Number(week)));
@@ -146,6 +210,9 @@ async function generateFromRequest({ teacherId, requestText, classId, subjectId,
     try {
       const subStrand = await resolveSubStrand({ scheme, entry });
       const weekEnding = getWeekEnding(school, scheme.term, week);
+      const sessionPlan = schedule.days
+        .map((day) => `${day} | ${schedule.duration || '[AI: Session duration]'}`)
+        .join('\n');
       const result = await generateLessonFromCurriculum({
         teacherId,
         schoolId: teacher.school,
@@ -156,8 +223,10 @@ async function generateFromRequest({ teacherId, requestText, classId, subjectId,
         term: scheme.term,
         week,
         weekEnding,
-        dayDate: mondayFromWeekEnding(weekEnding),
-        sessionsPerWeek: 1,
+        dayDate: dateForDay(weekEnding, schedule.days[0]),
+        duration: schedule.duration,
+        sessionsPerWeek: schedule.days.length || 1,
+        sessionPlan,
         regenerate: shouldRegenerate,
       });
       results.push({ week, status: result.status, lessonId: result.lesson._id });
