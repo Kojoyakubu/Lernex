@@ -101,6 +101,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/school', require('./routes/schoolRoutes'));
 app.use('/api/curriculum', require('./routes/curriculumRoutes'));
+app.use('/api/schemes', require('./routes/schemeRoutes'));
 app.use('/api/quizzes', require('./routes/quizRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes')); // ✅ AI routes
 

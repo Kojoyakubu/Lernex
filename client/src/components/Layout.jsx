@@ -151,6 +151,7 @@ const Layout = ({ onLogout }) => {
           { text: 'My Notes', icon: <BookIcon />, path: '/teacher/dashboard?tab=1' },
           { text: 'Drafts', icon: <FolderIcon />, path: '/teacher/dashboard?tab=2' },
           { text: 'Bundles', icon: <AssessmentIcon />, path: '/teacher/dashboard?tab=3' },
+          { text: 'My Schemes', icon: <FolderIcon />, path: '/teacher/schemes' },
         ];
 
       case 'student':

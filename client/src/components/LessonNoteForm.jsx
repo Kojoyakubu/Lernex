@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import { Article, OpenInFull, CloseFullscreen } from '@mui/icons-material';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import schemeService from '../features/schemes/schemeService';
 
 const DAY_OPTIONS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const TERM_TO_KEY = { one: 'one', two: 'two', three: 'three' };
@@ -362,6 +363,30 @@ function LessonNoteForm({
     setGenerateForRange(Boolean(memory.generateForRange));
     setWeeklyOverrides(memory.weeklyOverrides || {});
   }, [formData.facilitatorName, classId, subjectId]);
+
+  useEffect(() => {
+    if (!open || !classId || !subjectId || !formData.term || !formData.week || initialData) return;
+    schemeService.getCurrentCurriculum({
+      classId,
+      subjectId,
+      term: formData.term,
+      week: formData.week,
+    }).then((entry) => {
+      if (!entry) return;
+      const indicatorText = (entry.indicators || [])
+        .map((indicator) => [indicator.code, indicator.description].filter(Boolean).join(' - '))
+        .filter(Boolean)
+        .join('\n');
+      setFormData((prev) => ({
+        ...prev,
+        contentStandardCode: entry.contentStandard || prev.contentStandardCode,
+        indicatorCodes: indicatorText || prev.indicatorCodes,
+        reference: entry.activities || prev.reference,
+      }));
+    }).catch(() => {
+      // Manual generation remains available when no confirmed scheme matches.
+    });
+  }, [open, classId, subjectId, formData.term, formData.week, initialData]);
 
   useEffect(() => {
     if (!generateForRange || weekTargets.length === 0) {

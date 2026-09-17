@@ -22,6 +22,7 @@ import Register from './pages/Register';            // Separate register
 import SocialAuthCallback from './pages/SocialAuthCallback';
 import Dashboard from './pages/Dashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import TeacherSchemes from './pages/TeacherSchemes';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminSchools from './pages/AdminSchools';
@@ -100,6 +101,7 @@ const AppRoutes = () => {
             {/* Teacher Routes */}
             <Route element={<RoleRoute allowedRoles={['teacher']} />}>
               <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+              <Route path="/teacher/schemes" element={<TeacherSchemes />} />
               <Route path="/teacher/notes/:id" element={<LessonNoteView />} />
             </Route>
 
