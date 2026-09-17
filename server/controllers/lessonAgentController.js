@@ -4,7 +4,7 @@ const User = require('../models/userModel');
 const { generateFromRequest } = require('../services/lessonAgentService');
 
 const generateAgentLessons = asyncHandler(async (req, res) => {
-  const { request, classId, subjectId, term, weeks, regenerate, teacherId } = req.body;
+  const { request, classId, subjectId, term, weeks, regenerate, teacherId, curriculumSelections } = req.body;
   if (!String(request || '').trim() && (!Array.isArray(weeks) || !weeks.length)) {
     res.status(400);
     throw new Error('Describe the lesson or provide the weeks to generate.');
@@ -34,6 +34,7 @@ const generateAgentLessons = asyncHandler(async (req, res) => {
     term,
     weeks,
     regenerate,
+    curriculumSelections,
   });
   res.status(201).json(result);
 });

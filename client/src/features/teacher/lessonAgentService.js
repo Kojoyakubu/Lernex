@@ -1,6 +1,6 @@
 import api from '../../api/axios';
 
-const generateAgentLessons = async ({ request, classId, subjectId, term, weeks, regenerate }) => {
+const generateAgentLessons = async ({ request, classId, subjectId, term, weeks, regenerate, curriculumSelections }) => {
   const response = await api.post('/api/teacher/agent/generate', {
     request,
     classId,
@@ -8,6 +8,7 @@ const generateAgentLessons = async ({ request, classId, subjectId, term, weeks, 
     term,
     weeks,
     regenerate,
+    curriculumSelections,
   });
   return response.data;
 };

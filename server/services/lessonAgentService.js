@@ -115,7 +115,40 @@ async function findMatchingScheme({ teacherId, requestText, classId, subjectId, 
   return termMatches[0];
 }
 
-async function resolveSubStrand({ scheme, entry }) {
+function selectionError(message) {
+  const error = new Error(message);
+  error.code = 'CURRICULUM_SELECTION_REQUIRED';
+  return error;
+}
+
+async function getCurriculumOptions(scheme) {
+  const candidates = await SubStrand.find({})
+    .populate({ path: 'strand', populate: { path: 'subject', populate: { path: 'class' } } });
+  return candidates
+    .filter((candidate) => (
+      String(candidate.strand?.subject?._id) === String(scheme.subject._id)
+      && String(candidate.strand?.subject?.class?._id) === String(scheme.class._id)
+    ))
+    .map((candidate) => ({
+      strandId: candidate.strand._id,
+      strandName: candidate.strand.name,
+      subStrandId: candidate._id,
+      subStrandName: candidate.name,
+    }));
+}
+
+async function resolveSubStrand({ scheme, entry, selection }) {
+  if (selection?.subStrandId && mongoose.Types.ObjectId.isValid(selection.subStrandId)) {
+    const selected = await SubStrand.findById(selection.subStrandId)
+      .populate({ path: 'strand', populate: { path: 'subject', populate: { path: 'class' } } });
+    const belongsToScheme = selected
+      && String(selected.strand?.subject?._id) === String(scheme.subject._id)
+      && String(selected.strand?.subject?.class?._id) === String(scheme.class._id)
+      && (!selection.strandId || String(selected.strand._id) === String(selection.strandId));
+    if (belongsToScheme) return selected;
+    throw selectionError('The selected curriculum topic does not belong to this class and subject.');
+  }
+
   const candidates = await SubStrand.find({
     name: new RegExp(`^${escapeRegex(entry.subStrand)}$`, 'i'),
   }).populate({ path: 'strand', populate: { path: 'subject', populate: { path: 'class' } } });
@@ -125,12 +158,12 @@ async function resolveSubStrand({ scheme, entry }) {
     && (!entry.strand || normalize(candidate.strand?.name) === normalize(entry.strand))
   ));
   if (matching.length === 1) return matching[0];
-  if (matching.length > 1) throw new Error(`More than one curriculum topic matches "${entry.subStrand}".`);
+  if (matching.length > 1) throw selectionError(`More than one curriculum topic matches "${entry.subStrand}".`);
 
   // The confirmed scheme is the source of truth. Create only the exact missing
   // hierarchy labels from the scheme; never ask AI to invent curriculum data.
   if (!entry.strand || !entry.subStrand) {
-    throw new Error(`The scheme topic for this week is incomplete and needs review.`);
+    throw selectionError('The scheme topic for this week is incomplete and needs review.');
   }
 
   let strand = await Strand.findOne({
@@ -188,7 +221,7 @@ async function resolveWeeks({ scheme, requestText, weeks }) {
   throw new Error('Please specify a week, week range, or “all remaining lessons”.');
 }
 
-async function generateFromRequest({ teacherId, requestText, classId, subjectId, term, weeks: requestedWeeks, regenerate = false }) {
+async function generateFromRequest({ teacherId, requestText, classId, subjectId, term, weeks: requestedWeeks, regenerate = false, curriculumSelections = {} }) {
   const { teacher, school } = await loadTeacherContext(teacherId);
   const scheme = await findMatchingScheme({ teacherId, requestText, classId, subjectId, term });
   const weeks = await resolveWeeks({ scheme, requestText, weeks: requestedWeeks?.length ? requestedWeeks : parseWeeks(requestText) });
@@ -208,7 +241,11 @@ async function generateFromRequest({ teacherId, requestText, classId, subjectId,
       continue;
     }
     try {
-      const subStrand = await resolveSubStrand({ scheme, entry });
+      const subStrand = await resolveSubStrand({
+        scheme,
+        entry,
+        selection: curriculumSelections[String(week)],
+      });
       const weekEnding = getWeekEnding(school, scheme.term, week);
       const sessionPlan = schedule.days
         .map((day) => `${day} | ${schedule.duration || '[AI: Session duration]'}`)
@@ -231,7 +268,12 @@ async function generateFromRequest({ teacherId, requestText, classId, subjectId,
       });
       results.push({ week, status: result.status, lessonId: result.lesson._id });
     } catch (error) {
-      results.push({ week, status: 'failed', error: error.message });
+      const result = { week, status: 'failed', error: error.message };
+      if (error.code === 'CURRICULUM_SELECTION_REQUIRED') {
+        result.selectionRequired = true;
+        result.options = await getCurriculumOptions(scheme);
+      }
+      results.push(result);
     }
   }
 
