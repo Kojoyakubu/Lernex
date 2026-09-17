@@ -39,6 +39,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 // ═══════════════════════════════════════════════════════════
 // 🎨 DESIGN CONSTANTS
@@ -152,6 +153,7 @@ const Layout = ({ onLogout }) => {
           { text: 'Drafts', icon: <FolderIcon />, path: '/teacher/dashboard?tab=2' },
           { text: 'Bundles', icon: <AssessmentIcon />, path: '/teacher/dashboard?tab=3' },
           { text: 'My Schemes', icon: <FolderIcon />, path: '/teacher/schemes' },
+          { text: 'Lesson Agent', icon: <AutoAwesomeIcon />, path: '/teacher/agent' },
         ];
 
       case 'student':
