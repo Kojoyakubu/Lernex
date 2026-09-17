@@ -56,8 +56,7 @@ const openrouter = hasOpenRouter ? new OpenAI({ apiKey: process.env.OPENROUTER_A
 
 // ---- Default Model Choices (override via env if you like) ----
 const GEMINI_MAIN = process.env.GEMINI_MODEL_MAIN || 'gemini-3.6-flash';
-const GEMINI_FAST = process.env.G
-EMINI_MODEL_FAST || 'gemini-3.5-flash-lite';
+const GEMINI_FAST = process.env.GEMINI_MODEL_FAST || 'gemini-3.5-flash-lite';
 const OPENAI_MAIN = process.env.OPENAI_MODEL_MAIN || 'gpt-4o';
 const OPENAI_JSON = process.env.OPENAI_MODEL_JSON || 'gpt-4o-mini';
 const CLAUDE_MAIN = process.env.CLAUDE_MODEL_MAIN || 'claude-3-5-sonnet-20240620';
