@@ -6,10 +6,9 @@ const buildIndicatorText = (indicators = []) => indicators
   .filter(Boolean)
   .join('\n');
 
-const hasLessonSections = (content = '') => {
-  const normalized = String(content).toLowerCase();
-  return normalized.includes('teacher information')
-    && normalized.includes('lesson phases');
+const hasUsableLessonContent = (content = '') => {
+  const normalized = String(content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return normalized.length >= 100;
 };
 
 async function findExistingLesson({ teacherId, subStrandId, term, week }) {
@@ -72,8 +71,8 @@ async function generateLessonFromCurriculum({
   };
 
   const generated = await aiService.generateTeacherLessonNoteHTML(details);
-  if (!generated.text || !hasLessonSections(generated.text)) {
-    throw new Error('The generated lesson did not contain the required lesson sections.');
+  if (!hasUsableLessonContent(generated.text)) {
+    throw new Error('The generated lesson was empty or too short to save.');
   }
 
   const lesson = await LessonNote.create({
