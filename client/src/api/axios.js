@@ -36,6 +36,14 @@ const runRefreshSubscribers = (newToken) => {
 API.interceptors.request.use(
   (config) => {
     try {
+      // Let the browser set the multipart boundary for file uploads.
+      if (config.data instanceof FormData) {
+        if (config.headers?.delete) {
+          config.headers.delete('Content-Type');
+        } else if (config.headers) {
+          delete config.headers['Content-Type'];
+        }
+      }
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const user = JSON.parse(storedUser);

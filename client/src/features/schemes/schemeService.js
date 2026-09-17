@@ -8,7 +8,9 @@ const uploadScheme = async ({ classId, subjectId, term, file }) => {
   formData.append('subjectId', subjectId);
   formData.append('term', term);
   formData.append('schemeFile', file);
-  return (await api.post('/api/schemes/upload', formData)).data;
+  return (await api.post('/api/schemes/upload', formData, {
+    headers: { 'Content-Type': undefined },
+  })).data;
 };
 
 const updateScheme = async ({ schemeId, entries, importStatus }) => (
