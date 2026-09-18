@@ -44,10 +44,41 @@ function isRegenerationRequest(requestText, regenerate) {
   return Boolean(regenerate) || /regenerate|generate again|replace existing/i.test(requestText);
 }
 
+function parseExplicitProfileDetails(requestText) {
+  const text = String(requestText || '');
+  const facilitatorMatch = text.match(/facilitator\s+name\s+(?:should\s+be|is)\s+(.+?)(?=\s+and\s+(?:the\s+)?school(?:['’]s)?\s+name|[.;]|$)/i);
+  const schoolMatch = text.match(/school(?:['’]s)?\s+name\s+(?:should\s+be|is)\s+(.+?)(?=\s+and\s+the\s+session|[.;]|$)/i);
+  return {
+    facilitatorName: facilitatorMatch?.[1]?.trim() || '',
+    schoolName: schoolMatch?.[1]?.trim() || '',
+  };
+}
+
+function termCalendarKey(term) {
+  const normalized = normalize(term);
+  if (normalized.includes('first') || normalized === 'one') return 'one';
+  if (normalized.includes('second') || normalized === 'two') return 'two';
+  if (normalized.includes('third') || normalized === 'three') return 'three';
+  return '';
+}
+
 function getWeekEnding(school, term, week) {
-  const termKey = Object.entries(TERM_NAMES).find(([, value]) => value === term)?.[0];
+  const termKey = termCalendarKey(term);
   const weeks = termKey ? school?.termCalendar?.[termKey] || [] : [];
   return weeks.find((entry) => Number(entry.weekNumber) === Number(week))?.weekEnding || '';
+}
+
+function formatCalendarDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
 function mondayFromWeekEnding(weekEnding) {
@@ -229,6 +260,7 @@ async function generateFromRequest({ teacherId, requestText, classId, subjectId,
 
   const shouldRegenerate = isRegenerationRequest(requestText, regenerate);
   const schedule = parseSchedule(requestText);
+  const explicitProfile = parseExplicitProfileDetails(requestText);
   const results = [];
   for (const week of weeks) {
     const entry = scheme.entries.find((item) => item.weeks.includes(Number(week)));
@@ -246,21 +278,22 @@ async function generateFromRequest({ teacherId, requestText, classId, subjectId,
         entry,
         selection: curriculumSelections[String(week)],
       });
-      const weekEnding = getWeekEnding(school, scheme.term, week);
+      const configuredWeekEnding = getWeekEnding(school, scheme.term, week);
+      const weekEnding = formatCalendarDate(configuredWeekEnding);
       const sessionPlan = schedule.days
-        .map((day) => `${day} | ${schedule.duration || '[AI: Session duration]'}`)
+        .map((day) => `${formatCalendarDate(dateForDay(configuredWeekEnding, day)) || day} (${day}) | ${schedule.duration || '[AI: Session duration]'}`)
         .join('\n');
       const result = await generateLessonFromCurriculum({
         teacherId,
         schoolId: teacher.school,
-        schoolName: school.name,
-        facilitatorName: teacher.fullName,
+        schoolName: explicitProfile.schoolName || school.name,
+        facilitatorName: explicitProfile.facilitatorName || teacher.fullName,
         curriculum: entry,
         subStrand,
         term: scheme.term,
         week,
         weekEnding,
-        dayDate: dateForDay(weekEnding, schedule.days[0]),
+        dayDate: dateForDay(configuredWeekEnding, schedule.days[0]),
         duration: schedule.duration,
         sessionsPerWeek: schedule.days.length || 1,
         sessionPlan,
