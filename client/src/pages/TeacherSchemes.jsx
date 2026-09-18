@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CheckIcon from '@mui/icons-material/Check';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { fetchItems, fetchChildren, clearChildren } from '../features/curriculum/curriculumSlice';
 import schemeService from '../features/schemes/schemeService';
 
@@ -36,6 +37,7 @@ export default function TeacherSchemes() {
   const [selection, setSelection] = useState(emptySelection);
   const [schemes, setSchemes] = useState([]);
   const [reviewScheme, setReviewScheme] = useState(null);
+  const [reviewQueue, setReviewQueue] = useState([]);
   const [reviewEntries, setReviewEntries] = useState([]);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -70,9 +72,11 @@ export default function TeacherSchemes() {
     setMessage('');
     try {
       const result = await schemeService.uploadScheme({ ...selection, file });
-      setSchemes((current) => [result.scheme, ...current]);
-      setReviewScheme(result.scheme);
-      setReviewEntries(result.scheme.entries.map(entryToForm));
+      const importedSchemes = result.schemes || (result.scheme ? [result.scheme] : []);
+      setSchemes((current) => [...importedSchemes, ...current]);
+      setReviewScheme(importedSchemes[0]);
+      setReviewQueue(importedSchemes.slice(1));
+      setReviewEntries(importedSchemes[0].entries.map(entryToForm));
       setMessage(result.message);
       setFile(null);
     } catch (uploadError) {
@@ -91,10 +95,36 @@ export default function TeacherSchemes() {
         importStatus: 'confirmed',
       });
       setSchemes((current) => current.map((scheme) => scheme._id === updated._id ? updated : scheme));
-      setReviewScheme(null);
-      setMessage('Scheme imported successfully.');
+      if (reviewQueue.length) {
+        const [nextScheme, ...remaining] = reviewQueue;
+        setReviewQueue(remaining);
+        setReviewScheme(nextScheme);
+        setReviewEntries(nextScheme.entries.map(entryToForm));
+        setMessage(`${updated.subject?.name || 'Subject'} confirmed. Review the next subject scheme.`);
+      } else {
+        setReviewScheme(null);
+        setMessage('Scheme import completed successfully.');
+      }
     } catch (saveError) {
       setError(saveError.response?.data?.message || 'The scheme could not be saved.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleArchive = async (scheme) => {
+    const label = `${scheme.class?.name || 'class'} • ${scheme.subject?.name || 'subject'} • ${scheme.term}`;
+    if (!window.confirm(`Archive the scheme for ${label}? It will no longer be used for lesson generation.`)) return;
+
+    setLoading(true);
+    setError('');
+    try {
+      await schemeService.archiveScheme(scheme._id);
+      setSchemes((current) => current.filter((item) => item._id !== scheme._id));
+      if (reviewScheme?._id === scheme._id) setReviewScheme(null);
+      setMessage('Scheme archived successfully.');
+    } catch (archiveError) {
+      setError(archiveError.response?.data?.message || 'The scheme could not be archived.');
     } finally {
       setLoading(false);
     }
@@ -113,16 +143,16 @@ export default function TeacherSchemes() {
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
           <FormControl fullWidth><InputLabel>Level</InputLabel><Select value={selection.level} label="Level" onChange={(event) => choose('level', event.target.value)}>{levels.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
           <FormControl fullWidth><InputLabel>Class</InputLabel><Select value={selection.classId} label="Class" disabled={!selection.level} onChange={(event) => choose('classId', event.target.value)}>{classes.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
-          <FormControl fullWidth><InputLabel>Subject</InputLabel><Select value={selection.subjectId} label="Subject" disabled={!selection.classId} onChange={(event) => choose('subjectId', event.target.value)}>{subjects.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
+          <FormControl fullWidth><InputLabel>Subject</InputLabel><Select value={selection.subjectId} label="Subject" disabled={!selection.classId} onChange={(event) => choose('subjectId', event.target.value)}><MenuItem value="">Whole class document</MenuItem>{subjects.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
           <FormControl fullWidth><InputLabel>Term</InputLabel><Select value={selection.term} label="Term" disabled={!selection.subjectId} onChange={(event) => choose('term', event.target.value)}>{TERMS.map((term) => <MenuItem key={term} value={term}>{term}</MenuItem>)}</Select></FormControl>
         </Stack>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mt: 2 }}>
           <Button component="label" variant="outlined" startIcon={<UploadFileIcon />}> {file?.name || 'Choose scheme file'} <input hidden type="file" accept=".docx,.xlsx,.xls,.pdf,.csv" onChange={(event) => setFile(event.target.files?.[0] || null)} /></Button>
-          <Button variant="contained" onClick={handleUpload} disabled={loading || !selection.classId || !selection.subjectId || !selection.term || !file}>{loading ? <CircularProgress size={22} /> : 'Upload & Analyse'}</Button>
+          <Button variant="contained" onClick={handleUpload} disabled={loading || !selection.classId || !selection.term || !file}>{loading ? <CircularProgress size={22} /> : 'Upload & Analyse'}</Button>
         </Stack>
       </Paper>
       <Stack spacing={2}>
-        {schemes.map((scheme) => <Paper key={scheme._id} sx={{ p: 2 }}><Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1}><Box><Typography fontWeight={700}>{scheme.class?.name || 'Class'} • {scheme.subject?.name || 'Subject'}</Typography><Typography color="text.secondary">{scheme.term} • {scheme.entries?.length || 0} curriculum rows • {scheme.importStatus === 'confirmed' ? 'Imported' : 'Review required'}</Typography></Box><Button onClick={() => { setReviewScheme(scheme); setReviewEntries((scheme.entries || []).map(entryToForm)); }}>Review</Button></Stack></Paper>)}
+        {schemes.map((scheme) => <Paper key={scheme._id} sx={{ p: 2 }}><Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1}><Box><Typography fontWeight={700}>{scheme.class?.name || 'Class'} • {scheme.subject?.name || 'Subject'}</Typography><Typography color="text.secondary">{scheme.term} • {scheme.entries?.length || 0} curriculum rows • {scheme.importStatus === 'confirmed' ? 'Imported' : 'Review required'}</Typography></Box><Stack direction="row" spacing={1}><Button onClick={() => { setReviewScheme(scheme); setReviewEntries((scheme.entries || []).map(entryToForm)); }}>Review</Button><Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => handleArchive(scheme)} disabled={loading}>Archive</Button></Stack></Stack></Paper>)}
       </Stack>
       <Dialog open={Boolean(reviewScheme)} onClose={() => setReviewScheme(null)} fullWidth maxWidth="xl">
         <DialogTitle>Review Imported Scheme</DialogTitle>

@@ -4,6 +4,7 @@ const mammoth = require('mammoth');
 const pdfParse = require('pdf-parse');
 
 const FIELD_ALIASES = {
+  subject: ['subject', 'subjects', 'learning area subject', 'course'],
   weeks: ['week', 'weeks', 'week number', 'week no'],
   strand: ['strand', 'learning area'],
   subStrand: ['sub strand', 'sub-strand', 'sub-strands', 'substrand', 'sub strands'],
@@ -59,7 +60,8 @@ function rowsFromMatrix(matrix) {
       headers.forEach((field, index) => { if (field && row[index]) record[field] = row[index]; });
       return { ...record, sourceRow: headerIndex + offset + 2 };
     })
-    .filter((row) => Object.values(row).some((value) => clean(value)));
+    .filter((row) => Object.values(row).some((value) => clean(value)))
+    .filter((row) => normalizeHeader(row.weeks) !== 'weeks');
 }
 
 function toEntries(rows) {
@@ -76,6 +78,7 @@ function toEntries(rows) {
     return [{
       weeks,
       strand: clean(row.strand),
+      subject: clean(row.subject),
       subStrand: clean(row.subStrand),
       contentStandard: clean(row.contentStandard),
       indicators,
@@ -88,15 +91,32 @@ function toEntries(rows) {
   });
 }
 
+function extractSubjectLabel(html) {
+  const subjectMatches = [...String(html).matchAll(/(?:subject|learning area)\s*[:\-]\s*([^<\n]+)/gi)];
+  if (subjectMatches.length) return clean(subjectMatches[subjectMatches.length - 1][1]);
+  const headingMatches = [...String(html).matchAll(/<(?:h[1-6]|p)[^>]*>\s*([^<]*(?:computing|mathematics|english|science|social studies|ghanaian language|creative arts|career technology)[^<]*)\s*<\//gi)];
+  const heading = headingMatches[headingMatches.length - 1];
+  return heading ? clean(heading[1].replace(/^(?:subject|learning area)\s*[:\-]?\s*/i, '')) : '';
+}
+
 function htmlTablesToMatrix(html) {
   const tables = [...String(html).matchAll(/<table[\s\S]*?<\/table>/gi)];
   const matrix = [];
   tables.forEach((tableMatch) => {
+    const beforeTable = String(html).slice(0, tableMatch.index);
+    const subject = extractSubjectLabel(beforeTable.slice(-1200));
     const rows = [...tableMatch[0].matchAll(/<tr[\s\S]*?<\/tr>/gi)];
-    rows.forEach((rowMatch) => {
+    rows.forEach((rowMatch, rowIndex) => {
       const cells = [...rowMatch[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
         .map((cell) => clean(cell[1].replace(/<[^>]+>/g, ' ')));
-      if (cells.length) matrix.push(cells);
+      if (!cells.length) return;
+      if (subject && rowIndex === 0 && !cells.some((cell) => resolveField(cell) === 'subject')) {
+        matrix.push(['Subject', ...cells]);
+      } else if (subject && rowIndex > 0) {
+        matrix.push([subject, ...cells]);
+      } else {
+        matrix.push(cells);
+      }
     });
   });
   return matrix;

@@ -5,7 +5,7 @@ const getMySchemes = async () => (await api.get('/api/schemes')).data;
 const uploadScheme = async ({ classId, subjectId, term, file }) => {
   const formData = new FormData();
   formData.append('classId', classId);
-  formData.append('subjectId', subjectId);
+  if (subjectId) formData.append('subjectId', subjectId);
   formData.append('term', term);
   formData.append('schemeFile', file);
   return (await api.post('/api/schemes/upload', formData, {
@@ -21,6 +21,16 @@ const getSchemeWeeks = async (schemeId) => (await api.get(`/api/schemes/${scheme
 const getCurrentCurriculum = async ({ classId, subjectId, term, week }) => (
   await api.get('/api/schemes/current', { params: { classId, subjectId, term, week } })
 ).data;
+const archiveScheme = async (schemeId) => (
+  await api.delete(`/api/schemes/${schemeId}`)
+).data;
 
-const schemeService = { getMySchemes, uploadScheme, updateScheme, getSchemeWeeks, getCurrentCurriculum };
+const schemeService = {
+  getMySchemes,
+  uploadScheme,
+  updateScheme,
+  getSchemeWeeks,
+  getCurrentCurriculum,
+  archiveScheme,
+};
 export default schemeService;
