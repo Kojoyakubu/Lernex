@@ -94,9 +94,31 @@ function toEntries(rows) {
 function extractSubjectLabel(html) {
   const subjectMatches = [...String(html).matchAll(/(?:subject|learning area)\s*[:\-]\s*([^<\n]+)/gi)];
   if (subjectMatches.length) return clean(subjectMatches[subjectMatches.length - 1][1]);
-  const headingMatches = [...String(html).matchAll(/<(?:h[1-6]|p)[^>]*>\s*([^<]*(?:computing|mathematics|english|science|social studies|ghanaian language|creative arts|career technology)[^<]*)\s*<\//gi)];
-  const heading = headingMatches[headingMatches.length - 1];
-  return heading ? clean(heading[1].replace(/^(?:subject|learning area)\s*[:\-]?\s*/i, '')) : '';
+
+  const headingMatches = [...String(html).matchAll(/<(?:h[1-6]|p)[^>]*>([\s\S]*?)<\/(?:h[1-6]|p)>/gi)]
+    .map((match) => clean(match[1].replace(/<[^>]+>/g, ' ')))
+    .filter(Boolean);
+  const ignoredHeadings = new Set([
+    'scheme of learning',
+    'scheme of work',
+    'weeks',
+    'week',
+    'strand',
+    'sub-strand',
+    'sub strand',
+    'content standard',
+    'indicators',
+    'first term',
+    'second term',
+    'third term',
+  ]);
+  const candidate = headingMatches.reverse().find((heading) => {
+    const normalized = normalizeHeader(heading);
+    return !ignoredHeadings.has(normalized)
+      && heading.length <= 80
+      && !/^basic\s+\d+|^jhs\s+\d+|^term\b|^class\b/i.test(heading);
+  });
+  return candidate ? candidate.replace(/^(?:subject|learning area)\s*[:\-]?\s*/i, '') : '';
 }
 
 function htmlTablesToMatrix(html) {
