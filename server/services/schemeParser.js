@@ -92,6 +92,13 @@ function toEntries(rows) {
 }
 
 function extractSubjectLabel(html) {
+  const titleMatch = String(html).match(/annual\s+scheme\s+of\s+learning\s*[-:–—]+\s*([^<]+)/i);
+  if (titleMatch) {
+    return clean(titleMatch[1])
+      .replace(/\s*[–—-]\s*20\d{2}\s*[\/\-]\s*20\d{2}.*$/i, '')
+      .replace(/\s*[–—-]\s*basic\s*\d+.*$/i, '')
+      .trim();
+  }
   const subjectMatches = [...String(html).matchAll(/(?:subject|learning area)\s*[:\-]\s*([^<\n]+)/gi)];
   if (subjectMatches.length) return clean(subjectMatches[subjectMatches.length - 1][1]);
 
@@ -124,18 +131,40 @@ function extractSubjectLabel(html) {
 function htmlTablesToMatrix(html) {
   const tables = [...String(html).matchAll(/<table[\s\S]*?<\/table>/gi)];
   const matrix = [];
+  let structuredTableFound = false;
+  let currentWeek = '';
+  const documentSubject = extractSubjectLabel(html);
   tables.forEach((tableMatch) => {
-    const beforeTable = String(html).slice(0, tableMatch.index);
-    const subject = extractSubjectLabel(beforeTable.slice(-1200));
     const rows = [...tableMatch[0].matchAll(/<tr[\s\S]*?<\/tr>/gi)];
-    rows.forEach((rowMatch, rowIndex) => {
-      const cells = [...rowMatch[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
-        .map((cell) => clean(cell[1].replace(/<[^>]+>/g, ' ')));
+    const parsedRows = rows.map((rowMatch) => [...rowMatch[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
+      .map((cell) => clean(cell[1].replace(/<[^>]+>/g, ' '))));
+    const firstRowFields = parsedRows[0]?.map(resolveField).filter(Boolean) || [];
+    const isStructuredHeader = firstRowFields.length >= 4
+      && firstRowFields.includes('weeks')
+      && firstRowFields.includes('strand')
+      && firstRowFields.includes('subStrand');
+    if (isStructuredHeader) structuredTableFound = true;
+    if (!structuredTableFound) return;
+
+    parsedRows.forEach((cells, rowIndex) => {
       if (!cells.length) return;
-      if (subject && rowIndex === 0 && !cells.some((cell) => resolveField(cell) === 'subject')) {
-        matrix.push(['Subject', ...cells]);
-      } else if (subject && rowIndex > 0) {
-        matrix.push([subject, ...cells]);
+      if (isStructuredHeader && rowIndex === 0) {
+        matrix.push(documentSubject && !cells.some((cell) => resolveField(cell) === 'subject')
+          ? ['Subject', ...cells]
+          : cells);
+        return;
+      }
+      if (documentSubject && !matrix[0]?.some((cell) => resolveField(cell) === 'subject')) {
+        matrix[0].unshift('Subject');
+      }
+      if (cells.length === 4 && currentWeek) {
+        cells.unshift(currentWeek);
+      } else if (cells.length >= 5 && !parseWeeks(cells[0]).length && currentWeek) {
+        cells[0] = currentWeek;
+      }
+      if (parseWeeks(cells[0]).length) currentWeek = cells[0];
+      if (documentSubject) {
+        matrix.push([documentSubject, ...cells]);
       } else {
         matrix.push(cells);
       }
