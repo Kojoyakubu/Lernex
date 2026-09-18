@@ -66,7 +66,7 @@ export default function TeacherSchemes() {
   };
 
   const handleUpload = async () => {
-    if (!selection.classId || !selection.subjectId || !selection.term || !file) return;
+    if (!selection.classId || !selection.term || !file) return;
     setLoading(true);
     setError('');
     setMessage('');
@@ -143,7 +143,7 @@ export default function TeacherSchemes() {
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
           <FormControl fullWidth><InputLabel>Level</InputLabel><Select value={selection.level} label="Level" onChange={(event) => choose('level', event.target.value)}>{levels.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
           <FormControl fullWidth><InputLabel>Class</InputLabel><Select value={selection.classId} label="Class" disabled={!selection.level} onChange={(event) => choose('classId', event.target.value)}>{classes.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
-          <FormControl fullWidth><InputLabel>Subject</InputLabel><Select value={selection.subjectId} label="Subject" disabled={!selection.classId} onChange={(event) => choose('subjectId', event.target.value)}><MenuItem value="">Whole class document</MenuItem>{subjects.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
+          <FormControl fullWidth><InputLabel>Subject</InputLabel><Select value={selection.subjectId} label="Subject" displayEmpty renderValue={(value) => value ? subjects.find((item) => item._id === value)?.name || 'Subject' : 'Whole class document'} disabled={!selection.classId} onChange={(event) => choose('subjectId', event.target.value)}><MenuItem value="">Whole class document</MenuItem>{subjects.map((item) => <MenuItem key={item._id} value={item._id}>{item.name}</MenuItem>)}</Select></FormControl>
           <FormControl fullWidth><InputLabel>Term</InputLabel><Select value={selection.term} label="Term" disabled={!selection.classId} onChange={(event) => choose('term', event.target.value)}>{TERMS.map((term) => <MenuItem key={term} value={term}>{term}</MenuItem>)}</Select></FormControl>
         </Stack>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mt: 2 }}>
