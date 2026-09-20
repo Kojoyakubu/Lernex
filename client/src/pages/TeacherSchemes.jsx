@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
@@ -43,6 +43,14 @@ export default function TeacherSchemes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+
+  const schemesByClass = useMemo(() => schemes.reduce((groups, scheme) => {
+    const classId = scheme.class?._id || scheme.class || 'unknown-class';
+    const className = scheme.class?.name || 'Class not identified';
+    if (!groups[classId]) groups[classId] = { className, schemes: [] };
+    groups[classId].schemes.push(scheme);
+    return groups;
+  }, {}), [schemes]);
 
   useEffect(() => {
     dispatch(fetchItems({ entity: 'levels' }));
@@ -151,8 +159,13 @@ export default function TeacherSchemes() {
           <Button variant="contained" onClick={handleUpload} disabled={loading || !selection.classId || !selection.term || !file}>{loading ? <CircularProgress size={22} /> : 'Upload & Analyse'}</Button>
         </Stack>
       </Paper>
-      <Stack spacing={2}>
-        {schemes.map((scheme) => <Paper key={scheme._id} sx={{ p: 2 }}><Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1}><Box><Typography fontWeight={700}>{scheme.class?.name || 'Class'} • {scheme.subject?.name || 'Subject'}</Typography><Typography color="text.secondary">{scheme.term} • {scheme.entries?.length || 0} curriculum rows • {scheme.importStatus === 'confirmed' ? 'Imported' : 'Review required'}</Typography></Box><Stack direction="row" spacing={1}><Button onClick={() => { setReviewScheme(scheme); setReviewEntries((scheme.entries || []).map(entryToForm)); }}>Review</Button><Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => handleArchive(scheme)} disabled={loading}>Archive</Button></Stack></Stack></Paper>)}
+      <Stack spacing={3}>
+        {Object.values(schemesByClass).map((classGroup) => <Box key={classGroup.className}>
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 1.25 }}>{classGroup.className}</Typography>
+          <Stack spacing={1.5}>
+            {classGroup.schemes.map((scheme) => <Paper key={scheme._id} sx={{ p: 2 }}><Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1}><Box><Typography fontWeight={700}>{scheme.subject?.name || 'Subject'}</Typography><Typography color="text.secondary">{scheme.term} • {scheme.entries?.length || 0} curriculum rows • {scheme.importStatus === 'confirmed' ? 'Imported' : 'Review required'}</Typography></Box><Stack direction="row" spacing={1}><Button onClick={() => { setReviewScheme(scheme); setReviewEntries((scheme.entries || []).map(entryToForm)); }}>Review</Button><Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => handleArchive(scheme)} disabled={loading}>Archive</Button></Stack></Stack></Paper>)}
+          </Stack>
+        </Box>)}
       </Stack>
       <Dialog open={Boolean(reviewScheme)} onClose={() => setReviewScheme(null)} fullWidth maxWidth="xl">
         <DialogTitle>Review Imported Scheme</DialogTitle>
