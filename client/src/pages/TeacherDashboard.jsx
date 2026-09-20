@@ -1300,6 +1300,16 @@ function TeacherDashboard() {
           } catch (weekErr) {
             const weekNum = requestPayload.week || (i + 1);
             failedWeeks.push(weekNum);
+            // If it's an auth error, stop immediately and prompt re-login
+            const errMsg = String(weekErr || '').toLowerCase();
+            if (errMsg.includes('expired') || errMsg.includes('unauthorized') || errMsg.includes('not authorized') || errMsg.includes('401')) {
+              setSnackbar({
+                open: true,
+                message: 'Your session has expired. Please log out and log back in, then try again.',
+                severity: 'warning',
+              });
+              return;
+            }
           }
 
           // Small delay between requests to avoid overwhelming the server

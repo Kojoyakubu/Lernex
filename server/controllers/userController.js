@@ -40,7 +40,7 @@ const generateAccessToken = (user) => {
       status: user.status,
     },
     resolveJwtSecret('JWT_SECRET'),
-    { expiresIn: '15m' } // Short-lived access token
+    { expiresIn: '1d' } // Access token valid for 1 day
   );
 };
 
